@@ -1,0 +1,4 @@
+site_name: uml-tools
+theme:
+  name: mkdocs
+  nav_style: dark
