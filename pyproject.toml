@@ -1,17 +1,17 @@
 [tool.poetry]
-name = "uml-tools"
-version = "0.1.0"
+name = "uml-interpreter"
+version = "0.0.2a0"
 description = ""
 authors = ["Filip Pawłowski", "Hubert Soroka", "Maciej Tymoftyjewicz"]
 readme = "README.md"
 
 packages = [
-    { include = "uml-tools" },
-    { include = "uml-tools/**/*.py" },
+    { include = "uml-interpreter" },
+    { include = "uml-interpreter/**/*.py" },
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
 
 
 [tool.poetry.group.dev.dependencies]

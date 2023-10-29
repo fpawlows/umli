@@ -1,4 +1,4 @@
-# Python library - uml-tools
+# Python library - uml-interpreter
 
 ### Authors
 - Filip Pawłowski

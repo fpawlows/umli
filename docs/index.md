@@ -1,5 +1,5 @@
-# uml-tools
-Python library uml-tools documentation
+# uml-interpreter
+Python library uml-interpreter documentation
 
 ## Project layout
     .
@@ -15,5 +15,5 @@ Python library uml-tools documentation
     │   ├── __init__.py
     │   └── sample_test.py
     ├── tox.ini
-    └── uml-tools
+    └── uml-interpreter
         └── __init__.py

@@ -1,4 +1,4 @@
-site_name: uml-tools
+site_name: uml-interpreter
 theme:
   name: mkdocs
   nav_style: dark
