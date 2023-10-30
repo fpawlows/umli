@@ -18,6 +18,7 @@ python = "^3.10"
 mkdocs = "^1.5.3"
 tox = "^4.11.3"
 pytest = "^7.4.3"
+black = "^23.10.1"
 
 
 [build-system]

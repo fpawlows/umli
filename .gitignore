@@ -4,3 +4,4 @@ __pycache__
 .tox
 site/
 dist/
+uml-101.txt
