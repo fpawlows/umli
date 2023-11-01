@@ -1,5 +1,5 @@
 from typing import Optional
-from class_diagram import Element, ClassRelationship, Method
+from class_diagram import ClassDiagramElement, ClassRelationship, ClassDiagramMethod
 from base_classes import StructuralDiagram
 
 
@@ -9,13 +9,13 @@ class ComponentDiagram(StructuralDiagram):
         self.components: list[Component] = []
 
 
-class ComponentRelationMember():
+class ComponentRelationMember:
     def __init__(self) -> None:
         self.relations_to: list[ComponentRelationship] = []
         self.relations_from: list[ComponentRelationship] = []
 
 
-class ComponentRelationship():
+class ComponentRelationship:
     def __init__(self, source: ComponentRelationMember, target: ComponentRelationMember) -> None:
         self.source = source
         source.relations_from.append(self)
@@ -30,7 +30,7 @@ class Component(ComponentRelationMember):
         self.children: list[Component] = []
         self.ports: list[Port] = []
         self.interfaces: list[ComponentInterface] = []
-        self.elements: list[Element] = []
+        self.elements: list[ClassDiagramElement] = []
         self.name: str = ""
 
 
@@ -43,17 +43,17 @@ class Port(ComponentRelationMember):
 class ComponentInterface(ComponentRelationMember):
     def __init__(self) -> None:
         super().__init__()
-        self.methods = list[Method] = []
+        self.methods = list[ClassDiagramMethod] = []
         self.name: str = ""
 
 
-class ProvidedInterface(ComponentInterface):
+class ProvidedComponentInterface(ComponentInterface):
     def __init__(self) -> None:
         super().__init__()
-        self.fulfills: list[RequiredInterface] = []
+        self.fulfills: list[RequiredComponentInterface] = []
 
 
-class RequiredInterface(ComponentInterface):
+class RequiredComponentInterface(ComponentInterface):
     def __init__(self) -> None:
         super().__init__()
-        self.fulfilled_by: list[ProvidedInterface] = []
+        self.fulfilled_by: list[ProvidedComponentInterface] = []

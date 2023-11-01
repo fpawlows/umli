@@ -1,11 +1,11 @@
 from model.base_classes import UMLModel
 
 
-class ConsitencyFailure():
+class ConsitencyFailure:
     pass
 
 
-class ConsistencyChecker():
+class ConsistencyChecker:
     def __init__(self) -> None:
         pass
 
