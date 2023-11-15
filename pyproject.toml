@@ -6,8 +6,8 @@ authors = ["Filip Pawłowski", "Hubert Soroka", "Maciej Tymoftyjewicz"]
 readme = "README.md"
 
 packages = [
-    { include = "uml-interpreter" },
-    { include = "uml-interpreter/**/*.py" },
+    { include = "uml_interpreter" },
+    { include = "uml_interpreter/**/*.py" },
 ]
 
 [tool.poetry.dependencies]
