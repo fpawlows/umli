@@ -1,17 +1,21 @@
 import xml.etree.ElementTree as ET
+from abc import ABC, abstractmethod
 
 
-class XMLSource:
-    def __init__(self) -> None:
+class Source(ABC):
+    @abstractmethod
+    def read_tree(self):
         pass
 
-    def read_tree(self) -> ET.ElementTree:  # type: ignore
+
+class XMLSource(Source):
+    @abstractmethod
+    def read_tree(self) -> ET.ElementTree:
         pass
 
 
 class FileSource(XMLSource):
     def __init__(self, path: str) -> None:
-        super().__init__()
         self.path = path
 
     def read_tree(self) -> ET.ElementTree:
@@ -20,7 +24,6 @@ class FileSource(XMLSource):
 
 class StringSource(XMLSource):
     def __init__(self, xmlstring: str) -> None:
-        super().__init__()
         self.xmlstring = xmlstring
 
     def read_tree(self) -> ET.ElementTree:

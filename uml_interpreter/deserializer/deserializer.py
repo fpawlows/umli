@@ -9,6 +9,7 @@ The module includes the following:
 """
 
 import xml.etree.ElementTree as ET
+from abc import ABC, abstractmethod
 from typing import Any
 
 from uml_interpreter.deserializer.constants import (CLASS_IFACE_MAPPING,
@@ -43,11 +44,22 @@ class InvalidXMLError(Exception):
         return f"Parser Error: {self.msg}"
 
 
-class Deserializer:
+class Deserializer(ABC):
     def __init__(self, source: XMLSource) -> None:
-        self.source: XMLSource = source
+        self._source: XMLSource = source
 
-    def read_model(self) -> UMLModel:  # type: ignore
+    @abstractmethod
+    def read_model(self) -> UMLModel:
+        pass
+
+    @property
+    @abstractmethod
+    def source(self):
+        pass
+
+    @source.setter
+    @abstractmethod
+    def source(self, source):
         pass
 
 
@@ -62,8 +74,17 @@ class XMLDeserializer(Deserializer):
         except ET.ParseError as exc:
             raise InvalidXMLError(exc.msg)
 
-    def parse_model(self, tree: ET.ElementTree) -> UMLModel:  # type: ignore
+    @abstractmethod
+    def parse_model(self, tree: ET.ElementTree) -> UMLModel:
         pass
+
+    @property
+    def source(self) -> XMLSource:
+        return self._source
+
+    @source.setter
+    def source(self, source: XMLSource) -> None:
+        self._source = source
 
 
 class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
