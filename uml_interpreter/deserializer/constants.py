@@ -64,6 +64,7 @@ EA_ATTR: dict[str, str] = {
     "elem_name": "name",
     "end_id": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}id",
     "end_type": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}type",
+    "end_name": "name",
     "end_type_src": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}idref",
     "end_type_dst": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}idref",
     "end_name_src": "name",

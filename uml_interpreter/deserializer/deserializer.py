@@ -293,6 +293,9 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
         return meths
 
     def try_build_relationship(self, elem: ET.Element) -> bool:
+        if not (rel_name := elem.attrib.get(EA_ATTR["end_name"])):
+            rel_name = ""
+
         if elem.attrib[EA_ATTR["elem_type"]] in CLASS_RELATIONSHIPS:
             end_ids: list[str] = ["", ""]
             end_roles: list[str | None] = ["", ""]
@@ -353,7 +356,7 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
 
             type = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTR["elem_type"]]]
             self.curr_elem = ClassRelationship(
-                type, end_roles[0], end_roles[1], end_minmax[0], end_minmax[1]
+                type, rel_name, end_roles[0], end_roles[1], end_minmax[0], end_minmax[1]
             )
             self.temp_rel_ids.append((self.curr_elem, end_ids))
             return True

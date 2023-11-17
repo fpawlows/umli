@@ -46,6 +46,7 @@ class ClassRelationship:
     def __init__(
         self,
         type: str,
+        name: str,
         source_role: str | None,
         target_role: str | None,
         source_minmax: tuple[str, str] = ("", ""),
@@ -66,6 +67,7 @@ class ClassRelationship:
             target.relations_to.append(self)
 
         self.type = type
+        self.name = name
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_relationship(self)
