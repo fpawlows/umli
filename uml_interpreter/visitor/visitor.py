@@ -151,7 +151,9 @@ class ModelPrinter(ModelVisitor):
         if isinstance(rel.source, ClassDiagramElement) and isinstance(
             rel.target, ClassDiagramElement
         ):
-            self.print(f"{rel.type} - {rel.source.name} -> {rel.target.name}")
+            self.print(
+                f"{rel.type} - {rel.source.name} ({rel.source_role}) [{rel.source_minmax[0]}...{rel.source_minmax[1]}] -> [{rel.target_minmax[0]}...{rel.target_minmax[1]}] ({rel.target_role}) {rel.target.name}"
+            )
 
     def visit_class_diagram_attribute(self, attr: ClassDiagramAttribute):
         self.print(f"{attr.name}: {attr.type}")

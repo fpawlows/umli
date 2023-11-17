@@ -295,15 +295,55 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
     def try_build_relationship(self, elem: ET.Element) -> bool:
         if elem.attrib[EA_ATTR["elem_type"]] in CLASS_RELATIONSHIPS:
             end_ids: list[str] = ["", ""]
+            end_roles: list[str | None] = ["", ""]
+            end_minmax: list[tuple[str, str]] = [("", ""), ("", "")]
             for end in elem.iter(EA_TAGS["end"]):
                 if "EAID_dst" in end.attrib[EA_ATTR["end_id"]]:
                     end_ids[1] = self.get_node(end, "end_type").attrib[
                         EA_ATTR["end_type_dst"]
                     ]
+                    low = ""
+                    high = ""
+                    for src_vals in end.findall(EA_TAGS["end_low"]):
+                        dst_low = src_vals.attrib[EA_ATTR["end_low_type"]]
+                        if dst_low == "uml:LiteralUnlimitedNatural":
+                            low = "inf"
+                        else:
+                            low = src_vals.attrib[EA_ATTR["end_low_val"]]
+
+                    for src_vals in end.findall(EA_TAGS["end_high"]):
+                        dst_high = src_vals.attrib[EA_ATTR["end_high_type"]]
+                        if dst_high == "uml:LiteralUnlimitedNatural":
+                            high = "inf"
+                        else:
+                            high = src_vals.attrib[EA_ATTR["end_high_val"]]
+
+                    end_minmax[1] = (low, high)
+                    end_roles[1] = end.attrib.get(EA_ATTR["end_name_src"])
+
                 elif "EAID_src" in end.attrib[EA_ATTR["end_id"]]:
                     end_ids[0] = self.get_node(end, "end_type").attrib[
                         EA_ATTR["end_type_src"]
                     ]
+
+                    low = ""
+                    high = ""
+                    for src_vals in end.findall(EA_TAGS["end_low"]):
+                        src_low = src_vals.attrib[EA_ATTR["end_low_type"]]
+                        if src_low == "uml:LiteralUnlimitedNatural":
+                            low = "inf"
+                        else:
+                            low = src_vals.attrib[EA_ATTR["end_low_val"]]
+
+                    for src_vals in end.findall(EA_TAGS["end_high"]):
+                        src_high = src_vals.attrib[EA_ATTR["end_high_type"]]
+                        if src_high == "uml:LiteralUnlimitedNatural":
+                            high = "inf"
+                        else:
+                            high = src_vals.attrib[EA_ATTR["end_high_val"]]
+
+                    end_minmax[0] = (low, high)
+                    end_roles[0] = end.attrib.get(EA_ATTR["end_name_src"])
 
             if not (
                 all(isinstance(end, str) for end in end_ids)
@@ -312,7 +352,9 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
                 raise InvalidXMLError(ERROR_MESS[ErrorType.REL_ENDS])
 
             type = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTR["elem_type"]]]
-            self.curr_elem = ClassRelationship(type)
+            self.curr_elem = ClassRelationship(
+                type, end_roles[0], end_roles[1], end_minmax[0], end_minmax[1]
+            )
             self.temp_rel_ids.append((self.curr_elem, end_ids))
             return True
         return False

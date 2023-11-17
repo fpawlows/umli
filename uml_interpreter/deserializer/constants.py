@@ -35,11 +35,14 @@ EA_TAGS: dict[str, str] = {
     "elem": "packagedElement",
     "end": "ownedEnd",
     "end_type": "type",
+    "end_low": "lowerValue",
+    "end_high": "upperValue",
     "elem_attr": "ownedAttribute",
     "elem_attr_type": "type",
     "elem_meth": "ownedOperation",
     "elem_meth_param": "ownedParameter",
     "elem_meth_param_type": "type",
+
 
 
     # Diagrams
@@ -63,6 +66,12 @@ EA_ATTR: dict[str, str] = {
     "end_type": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}type",
     "end_type_src": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}idref",
     "end_type_dst": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}idref",
+    "end_name_src": "name",
+    "end_name_dst": "name",
+    "end_low_val": "value",
+    "end_high_val": "value",
+    "end_low_type": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}type",
+    "end_high_type": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}type",
     "elem_attr_name": "name",
     "elem_attr_type": "href",
     "elem_meth_name": "name",
@@ -81,7 +90,7 @@ Enterprise Architect XML attributes
 
 EA_ATTR_MAPPING = {
     "http://schema.omg.org/spec/UML/2.1/uml.xml#Integer": "integer",
-    "EAnone_void": "void"
+    "EAnone_void": "void",
 }
 
 

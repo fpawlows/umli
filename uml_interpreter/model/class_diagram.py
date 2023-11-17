@@ -46,15 +46,25 @@ class ClassRelationship:
     def __init__(
         self,
         type: str,
+        source_role: str | None,
+        target_role: str | None,
+        source_minmax: tuple[str, str] = ("", ""),
+        target_minmax: tuple[str, str] = ("", ""),
         source: ClassDiagramElement | None = None,
         target: ClassDiagramElement | None = None,
     ) -> None:
         self.source = source
+        self.source_role = source_role if source_role else ""
+        self.source_minmax = source_minmax
         if isinstance(source, ClassDiagramElement):
             source.relations_from.append(self)
+
         self.target = target
+        self.target_role = target_role if target_role else ""
+        self.target_minmax = target_minmax
         if isinstance(target, ClassDiagramElement):
             target.relations_to.append(self)
+
         self.type = type
 
     def accept(self, visitor: v.ModelVisitor):
