@@ -17,6 +17,7 @@ from uml_interpreter.deserializer.constants import (
     CLASS_REL_MAPPING_TYPE,
     CLASS_RELATIONSHIPS,
     EA_ATTR,
+    EA_ATTR_MAPPING,
     EA_TAGS,
     ERROR_MESS,
     TAGS_ERRORS,
@@ -25,7 +26,10 @@ from uml_interpreter.deserializer.constants import (
 from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
 from uml_interpreter.model.class_diagram import (
     ClassDiagram,
+    ClassDiagramAttribute,
     ClassDiagramElement,
+    ClassDiagramMethod,
+    ClassDiagramMethodParameter,
     ClassRelationship,
 )
 from uml_interpreter.source.source import FileSource, XMLSource
@@ -96,11 +100,12 @@ class XMLDeserializer(Deserializer):
 class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
     def __init__(self, source: XMLSource) -> None:
         super().__init__(source)
+        self.temp_rel_ids = []
 
     def parse_model(self, tree: ET.ElementTree) -> UMLModel:
         root = self.get_root(tree)
 
-        model_node = self.get_node(root, EA_TAGS["model"])
+        model_node = self.get_node(root, "model")
 
         elems: list[
             tuple[ClassDiagramElement | ClassRelationship | Any, str]
@@ -129,7 +134,7 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
         return root
 
     def get_node(self, root: ET.Element, tag: str) -> ET.Element:
-        node = root.find(tag)
+        node = root.find(EA_TAGS[tag])
         if node is None:
             raise InvalidXMLError(TAGS_ERRORS[tag])
         return node
@@ -152,8 +157,7 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
         if self.skip_package(elem):
             return None
         if self.try_build_class_or_iface(elem) or self.try_build_relationship(elem):
-            elem_id = elem.attrib.get(EA_ATTR["elem_id"])
-            if elem_id is None:
+            if not (elem_id := elem.attrib.get(EA_ATTR["elem_id"])):
                 raise InvalidXMLError(ERROR_MESS[ErrorType.MODEL_ID_MISSING])
             return (self.curr_elem, elem_id)
 
@@ -186,8 +190,8 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
     ) -> list[UMLDiagram]:
         diagrams: list[UMLDiagram] = []
 
-        ext = self.get_node(root, EA_TAGS["ext"])
-        diags = self.get_node(ext, EA_TAGS["diags"])
+        ext = self.get_node(root, "ext")
+        diags = self.get_node(ext, "diags")
 
         self.populate_diagrams(elems, diagrams, diags)
 
@@ -205,7 +209,7 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
     def get_filled_diag(
         self, diag: ET.Element, elems: list[tuple[ClassDiagramElement | Any, str]]
     ) -> UMLDiagram:
-        diag_name = self.get_node(diag, EA_TAGS["diag_propty"]).attrib[
+        diag_name = self.get_node(diag, "diag_propty").attrib[
             EA_ATTR["diag_propty_name"]
         ]
         diag_elems = diag.find(EA_TAGS["diag_elems"])
@@ -231,23 +235,73 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
         return False
 
     def try_build_class_or_iface(self, elem: ET.Element) -> bool:
-        ElemClass = CLASS_IFACE_MAPPING.get(elem.attrib[EA_ATTR["elem_type"]])
-        if ElemClass is not None:
+        if ElemClass := CLASS_IFACE_MAPPING.get(elem.attrib[EA_ATTR["elem_type"]]):
             self.curr_elem = ElemClass(elem.attrib[EA_ATTR["elem_name"]])
+
+            attrs: list[ClassDiagramAttribute] = self.build_attributes(elem)
+            meths: list[ClassDiagramMethod] = self.build_methods(elem)
+            self.curr_elem.attributes = attrs
+            self.curr_elem.methods = meths
             return True
         return False
 
+    def build_attributes(self, elem: ET.Element) -> list[ClassDiagramAttribute]:
+        attrs: list[ClassDiagramAttribute] = []
+        for attr in elem.iter(EA_TAGS["elem_attr"]):
+            name: str = attr.attrib[EA_ATTR["elem_attr_name"]]
+            if not (
+                type := EA_ATTR_MAPPING.get(
+                    self.get_node(attr, "elem_attr_type").attrib[
+                        EA_ATTR["elem_attr_type"]
+                    ]
+                )
+            ):
+                type = ""
+            attrs.append(ClassDiagramAttribute(name, type))
+        return attrs
+
+    def build_methods(self, elem: ET.Element) -> list[ClassDiagramMethod]:
+        meths: list[ClassDiagramMethod] = []
+        for meth in elem.iter(EA_TAGS["elem_meth"]):
+            name: str = meth.attrib[EA_ATTR["elem_meth_name"]]
+            ret_type: str | None = ""
+            params: list[ClassDiagramMethodParameter] = []
+            for param in meth.iter(EA_TAGS["elem_meth_param"]):
+                if (
+                    param_name := param.attrib[EA_ATTR["elem_meth_param_name"]]
+                ) == "return":
+                    if not (
+                        ret_type := EA_ATTR_MAPPING.get(
+                            param.attrib[EA_ATTR["elem_meth_ret_type"]]
+                        )
+                    ):
+                        ret_type = ""
+
+                else:
+                    if not (
+                        type := EA_ATTR_MAPPING.get(
+                            self.get_node(param, "elem_meth_param_type").attrib[
+                                EA_ATTR["elem_meth_param_type"]
+                            ]
+                        )
+                    ):
+                        type = ""
+
+                    params.append(ClassDiagramMethodParameter(param_name, type))
+
+            meths.append(ClassDiagramMethod(name, ret_type, params))
+        return meths
+
     def try_build_relationship(self, elem: ET.Element) -> bool:
-        self.temp_rel_ids = []
         if elem.attrib[EA_ATTR["elem_type"]] in CLASS_RELATIONSHIPS:
             end_ids: list[str] = ["", ""]
-            for end in elem.findall(EA_TAGS["end"]):
+            for end in elem.iter(EA_TAGS["end"]):
                 if "EAID_dst" in end.attrib[EA_ATTR["end_id"]]:
-                    end_ids[1] = self.get_node(end, EA_TAGS["end_type"]).attrib[
+                    end_ids[1] = self.get_node(end, "end_type").attrib[
                         EA_ATTR["end_type_dst"]
                     ]
                 elif "EAID_src" in end.attrib[EA_ATTR["end_id"]]:
-                    end_ids[0] = self.get_node(end, EA_TAGS["end_type"]).attrib[
+                    end_ids[0] = self.get_node(end, "end_type").attrib[
                         EA_ATTR["end_type_src"]
                     ]
 

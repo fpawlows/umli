@@ -35,6 +35,12 @@ EA_TAGS: dict[str, str] = {
     "elem": "packagedElement",
     "end": "ownedEnd",
     "end_type": "type",
+    "elem_attr": "ownedAttribute",
+    "elem_attr_type": "type",
+    "elem_meth": "ownedOperation",
+    "elem_meth_param": "ownedParameter",
+    "elem_meth_param_type": "type",
+
 
     # Diagrams
     "ext": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}Extension",
@@ -57,6 +63,12 @@ EA_ATTR: dict[str, str] = {
     "end_type": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}type",
     "end_type_src": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}idref",
     "end_type_dst": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}idref",
+    "elem_attr_name": "name",
+    "elem_attr_type": "href",
+    "elem_meth_name": "name",
+    "elem_meth_param_type": "href",
+    "elem_meth_param_name": "name",
+    "elem_meth_ret_type": "type",
 
     # Diagrams
     "diag_id": f"{DESERIALIZER_CONSTANTS["XMI2_1"]}id",
@@ -66,6 +78,11 @@ EA_ATTR: dict[str, str] = {
 """
 Enterprise Architect XML attributes
 """
+
+EA_ATTR_MAPPING = {
+    "http://schema.omg.org/spec/UML/2.1/uml.xml#Integer": "integer",
+    "EAnone_void": "void"
+}
 
 
 EA_TAGS_EXT: dict[str, str] = {
@@ -141,6 +158,8 @@ class ErrorType(Enum):
     MIXED_ELEMS = auto(),
     MODEL_ID_MISSING = auto(),
     REL_ENDS = auto(),
+    ATTR_TYPE = auto(),
+    METH_PARAM_TYPE = auto()
 
 
 ERROR_MESS: dict[ErrorType, str] = {
@@ -152,14 +171,18 @@ ERROR_MESS: dict[ErrorType, str] = {
     ErrorType.MIXED_ELEMS: "Mixed elements' types for diagram in XML file.",
     ErrorType.MODEL_ID_MISSING: "UML Model element is missing an id!",
     ErrorType.REL_ENDS: "Relationship is missing at least one of the ends!",
+    ErrorType.ATTR_TYPE: "Attribute is missing a type!",
+    ErrorType.METH_PARAM_TYPE: "Parameter is missing a type!",
 }
 
 TAGS_ERRORS: dict[str, str] = {
-    EA_TAGS["root"]: ERROR_MESS[ErrorType.ROOT_ERROR],
-    EA_TAGS["model"]: ERROR_MESS[ErrorType.MODEL_ERROR],
-    EA_TAGS["ext"]: ERROR_MESS[ErrorType.EXT_ERROR],
-    EA_TAGS["diags"]: ERROR_MESS[ErrorType.DIAGS_ERROR],
-    EA_TAGS["diag_propty"]: ERROR_MESS[ErrorType.DIAG_PROPTY_ERROR],
+    "root": ERROR_MESS[ErrorType.ROOT_ERROR],
+    "model": ERROR_MESS[ErrorType.MODEL_ERROR],
+    "ext": ERROR_MESS[ErrorType.EXT_ERROR],
+    "diags": ERROR_MESS[ErrorType.DIAGS_ERROR],
+    "diag_propty": ERROR_MESS[ErrorType.DIAG_PROPTY_ERROR],
+    "elem_attr_type": ERROR_MESS[ErrorType.ATTR_TYPE],
+    "elem_meth_param_type": ERROR_MESS[ErrorType.METH_PARAM_TYPE],
 }
 """
 Error messages for XML tags

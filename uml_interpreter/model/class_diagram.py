@@ -1,3 +1,5 @@
+from typing import Any
+
 import uml_interpreter.model.base_classes as bc
 import uml_interpreter.model.sequence_diagram as sd
 import uml_interpreter.visitor.visitor as v
@@ -60,11 +62,9 @@ class ClassRelationship:
 
 
 class ClassDiagramMethod:
-    def __init__(self, element: ClassDiagramElement, name: str, ret_type: str) -> None:
-        self.assigned_element = element
-        element.methods.append(self)
+    def __init__(self, name: str, ret_type: str, parameters=None) -> None:
         self.name = name
-        self.attributes: list[ClassDiagramAttribute] = []
+        self.parameters: list[ClassDiagramAttribute] = parameters if parameters else []
         self.ret_type = ret_type
 
     def accept(self, visitor: v.ModelVisitor):
@@ -72,13 +72,20 @@ class ClassDiagramMethod:
 
 
 class ClassDiagramAttribute:
-    def __init__(
-        self, element: ClassDiagramElement | ClassDiagramMethod, name: str, type: str
-    ) -> None:
-        self.assigned_element = element
-        element.attributes.append(self)
+    def __init__(self, name: str, type: str, init_value: Any = None) -> None:
         self.name = name
         self.type = type
+        self.init_value = init_value
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_diagram_attribute(self)
+
+
+class ClassDiagramMethodParameter:
+    def __init__(self, name: str, type: str, default_value: Any = None) -> None:
+        self.name = name
+        self.type = type
+        self.default_value = default_value
+
+    def accept(self, visitor: v.ModelVisitor):
+        visitor.visit_class_diagram_method_parameter(self)

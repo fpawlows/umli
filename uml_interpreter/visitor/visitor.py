@@ -20,6 +20,7 @@ if TYPE_CHECKING:
         ClassDiagramElement,
         ClassDiagramInterface,
         ClassDiagramMethod,
+        ClassDiagramMethodParameter,
         ClassRelationship,
     )
 
@@ -59,6 +60,10 @@ class ModelVisitor(ABC):
 
     @abstractmethod
     def visit_diagram_method(self, diag: ClassDiagramMethod):
+        pass
+
+    @abstractmethod
+    def visit_class_diagram_method_parameter(self, diag: ClassDiagramMethodParameter):
         pass
 
 
@@ -129,15 +134,15 @@ class ModelPrinter(ModelVisitor):
         if len(elem.attributes) > 0:
             self.print("Attributes:")
             self.incr_ident()
-            for rel in elem.attributes:
-                rel.accept(self)
+            for attr in elem.attributes:
+                attr.accept(self)
             self.decr_ident()
 
         if len(elem.methods) > 0:
             self.print("Methods:")
             self.incr_ident()
-            for rel in elem.methods:
-                rel.accept(self)
+            for meth in elem.methods:
+                meth.accept(self)
             self.decr_ident()
 
     def visit_class_relationship(self, rel: ClassRelationship):
@@ -153,8 +158,11 @@ class ModelPrinter(ModelVisitor):
 
     def visit_diagram_method(self, meth: ClassDiagramMethod):
         self.print(
-            f"{meth.name}: {[f'{attr.name}: {attr.type}' for attr in meth.attributes]} -> {meth.ret_type}"
+            f"{meth.name}: {[f'{param.name}: {param.type}' for param in meth.parameters]} -> {meth.ret_type}"
         )
+
+    def visit_class_diagram_method_parameter(self, param: ClassDiagramMethodParameter):
+        self.print(f"{param.name}: {param.type}")
 
     def incr_ident(self) -> None:
         self._indent = self._indent + self._indent_inc
