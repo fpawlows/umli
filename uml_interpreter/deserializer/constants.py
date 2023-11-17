@@ -117,7 +117,7 @@ UML Class Relationships types
 """
 
 CLASS_REL_MAPPING_TYPE: dict[str, str] = {
-    "uml:Association": "association",
+    "uml:Association": "Association",
 }
 """
 Mapping of relationship elements to their type name
