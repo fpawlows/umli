@@ -1,27 +1,27 @@
 import xml.etree.ElementTree as ET
 
 
-class Source:
+class XMLSource:
     def __init__(self) -> None:
         pass
 
-    def read(self) -> ET.ElementTree:  # type: ignore
+    def read_tree(self) -> ET.ElementTree:  # type: ignore
         pass
 
 
-class XMLSource(Source):
+class FileSource(XMLSource):
     def __init__(self, path: str) -> None:
         super().__init__()
         self.path = path
 
-    def read(self) -> ET.ElementTree:
+    def read_tree(self) -> ET.ElementTree:
         return ET.parse(self.path)
 
 
-class StringSource(Source):
+class StringSource(XMLSource):
     def __init__(self, xmlstring: str) -> None:
-        self.xmlstring = xmlstring
         super().__init__()
+        self.xmlstring = xmlstring
 
-    def read(self) -> ET.ElementTree:
+    def read_tree(self) -> ET.ElementTree:
         return ET.ElementTree(ET.fromstring(self.xmlstring))

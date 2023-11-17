@@ -2,9 +2,9 @@ from typing import Optional
 
 
 class UMLModel:
-    def __init__(self) -> None:
-        self.diagrams: list[UMLDiagram] = []
-        self.filename: Optional[str] = None
+    def __init__(self, diagrams=None, filename=None) -> None:
+        self.diagrams: list[UMLDiagram] = diagrams if diagrams else []
+        self.filename: Optional[str] = filename
 
 
 class UMLDiagram:

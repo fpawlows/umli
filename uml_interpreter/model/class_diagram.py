@@ -3,9 +3,9 @@ import uml_interpreter.model.sequence_diagram as sd
 
 
 class ClassDiagram(bc.StructuralDiagram):
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, elements=None) -> None:
         super().__init__(name)
-        self.elements: list[ClassDiagramElement] = []
+        self.elements: list[ClassDiagramElement] = elements if elements else []
 
 
 class ClassDiagramElement(sd.SequenceActor):
@@ -28,12 +28,18 @@ class ClassDiagramInterface(ClassDiagramElement):
 
 class ClassRelationship:
     def __init__(
-        self, source: ClassDiagramElement, target: ClassDiagramElement
+        self,
+        type: str,
+        source: ClassDiagramElement | None = None,
+        target: ClassDiagramElement | None = None,
     ) -> None:
         self.source = source
-        source.relations_from.append(self)
+        if isinstance(source, ClassDiagramElement):
+            source.relations_from.append(self)
         self.target = target
-        target.relations_to.append(self)
+        if isinstance(target, ClassDiagramElement):
+            target.relations_to.append(self)
+        self.type = type
 
 
 class ClassDiagramMethod:
