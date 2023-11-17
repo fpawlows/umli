@@ -72,7 +72,9 @@ class ClassDiagramMethod:
 
 
 class ClassDiagramAttribute:
-    def __init__(self, element: ClassDiagramElement | ClassDiagramMethod, name: str, type: str) -> None:
+    def __init__(
+        self, element: ClassDiagramElement | ClassDiagramMethod, name: str, type: str
+    ) -> None:
         self.assigned_element = element
         element.attributes.append(self)
         self.name = name

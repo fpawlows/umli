@@ -1,3 +1,11 @@
+"""
+UML Model visitors module
+
+The module includes the following:
+- ModelVisitor
+- ModelPrinter
+"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -5,13 +13,15 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
-    from uml_interpreter.model.class_diagram import (ClassDiagram,
-                                                     ClassDiagramAttribute,
-                                                     ClassDiagramClass,
-                                                     ClassDiagramElement,
-                                                     ClassDiagramInterface,
-                                                     ClassDiagramMethod,
-                                                     ClassRelationship)
+    from uml_interpreter.model.class_diagram import (
+        ClassDiagram,
+        ClassDiagramAttribute,
+        ClassDiagramClass,
+        ClassDiagramElement,
+        ClassDiagramInterface,
+        ClassDiagramMethod,
+        ClassRelationship,
+    )
 
 
 class ModelVisitor(ABC):
@@ -53,6 +63,10 @@ class ModelVisitor(ABC):
 
 
 class ModelPrinter(ModelVisitor):
+    """
+    Used to print out UML Model's hierarchical structure to the user's console.
+    """
+
     def __init__(self, indent: int = 0, indent_inc: int = 2) -> None:
         self._indent = indent
         self._indent_inc = indent_inc
@@ -98,28 +112,28 @@ class ModelPrinter(ModelVisitor):
         self.decr_ident()
 
     def visit_class_diagram_element_data(self, elem: ClassDiagramElement):
-        if (len(elem.relations_from) > 0):
+        if len(elem.relations_from) > 0:
             self.print("Relationships (source):")
             self.incr_ident()
             for rel in elem.relations_from:
                 rel.accept(self)
             self.decr_ident()
 
-        if (len(elem.relations_to) > 0):
+        if len(elem.relations_to) > 0:
             self.print("Relationships (target):")
             self.incr_ident()
             for rel in elem.relations_to:
                 rel.accept(self)
             self.decr_ident()
 
-        if (len(elem.attributes) > 0):
+        if len(elem.attributes) > 0:
             self.print("Attributes:")
             self.incr_ident()
             for rel in elem.attributes:
                 rel.accept(self)
             self.decr_ident()
 
-        if (len(elem.methods) > 0):
+        if len(elem.methods) > 0:
             self.print("Methods:")
             self.incr_ident()
             for rel in elem.methods:
@@ -129,14 +143,18 @@ class ModelPrinter(ModelVisitor):
     def visit_class_relationship(self, rel: ClassRelationship):
         from uml_interpreter.model.class_diagram import ClassDiagramElement
 
-        if isinstance(rel.source, ClassDiagramElement) and isinstance(rel.target, ClassDiagramElement):
+        if isinstance(rel.source, ClassDiagramElement) and isinstance(
+            rel.target, ClassDiagramElement
+        ):
             self.print(f"{rel.type} - {rel.source.name} -> {rel.target.name}")
 
     def visit_class_diagram_attribute(self, attr: ClassDiagramAttribute):
         self.print(f"{attr.name}: {attr.type}")
 
     def visit_diagram_method(self, meth: ClassDiagramMethod):
-        self.print(f"{meth.name}: {[f'{attr.name}: {attr.type}' for attr in meth.attributes]} -> {meth.ret_type}")
+        self.print(
+            f"{meth.name}: {[f'{attr.name}: {attr.type}' for attr in meth.attributes]} -> {meth.ret_type}"
+        )
 
     def incr_ident(self) -> None:
         self._indent = self._indent + self._indent_inc
@@ -145,4 +163,4 @@ class ModelPrinter(ModelVisitor):
         self._indent = self._indent - self._indent_inc
 
     def print(self, mess: str) -> None:
-        print('|' + '-' * self._indent + mess)
+        print("|" + "-" * self._indent + mess)

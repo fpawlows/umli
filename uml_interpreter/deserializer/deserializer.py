@@ -12,16 +12,22 @@ import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
 from typing import Any
 
-from uml_interpreter.deserializer.constants import (CLASS_IFACE_MAPPING,
-                                                    CLASS_REL_MAPPING_TYPE,
-                                                    CLASS_RELATIONSHIPS,
-                                                    EA_ATTR, EA_TAGS,
-                                                    ERROR_MESS, TAGS_ERRORS,
-                                                    ErrorType)
+from uml_interpreter.deserializer.constants import (
+    CLASS_IFACE_MAPPING,
+    CLASS_REL_MAPPING_TYPE,
+    CLASS_RELATIONSHIPS,
+    EA_ATTR,
+    EA_TAGS,
+    ERROR_MESS,
+    TAGS_ERRORS,
+    ErrorType,
+)
 from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
-from uml_interpreter.model.class_diagram import (ClassDiagram,
-                                                 ClassDiagramElement,
-                                                 ClassRelationship)
+from uml_interpreter.model.class_diagram import (
+    ClassDiagram,
+    ClassDiagramElement,
+    ClassRelationship,
+)
 from uml_interpreter.source.source import FileSource, XMLSource
 
 
