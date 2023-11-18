@@ -99,24 +99,24 @@ class ModelPrinter(ModelVisitor):
         self.print(f'Element: "{elem.name}"')
 
         self.incr_ident()
-        self.visit_class_diagram_element_data(elem)
+        self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
     def visit_class_diagram_class(self, elem: ClassDiagramClass):
         self.print(f'Class: "{elem.name}"')
 
         self.incr_ident()
-        self.visit_class_diagram_element_data(elem)
+        self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
     def visit_class_diagram_interface(self, elem: ClassDiagramInterface):
         self.print(f'Interface: "{elem.name}"')
 
         self.incr_ident()
-        self.visit_class_diagram_element_data(elem)
+        self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
-    def visit_class_diagram_element_data(self, elem: ClassDiagramElement):
+    def _visit_class_diagram_element_data(self, elem: ClassDiagramElement):
         if len(elem.relations_from) > 0:
             self.print("Relationships (source):")
             self.incr_ident()

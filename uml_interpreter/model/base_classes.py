@@ -16,18 +16,18 @@ class UMLModel:
 
 
 class UMLDiagram:
-    def __init__(self, name: str) -> None:
-        self.name = name
+    def __init__(self, name: str | None = None) -> None:
+        self.name: str = name if name else ""
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_diagram(self)
 
 
 class StructuralDiagram(UMLDiagram):
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str | None = None) -> None:
         super().__init__(name)
 
 
 class BehavioralDiagram(UMLDiagram):
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str | None = None) -> None:
         super().__init__(name)

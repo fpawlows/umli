@@ -6,7 +6,7 @@ import uml_interpreter.visitor.visitor as v
 
 
 class ClassDiagram(bc.StructuralDiagram):
-    def __init__(self, name: str, elements=None) -> None:
+    def __init__(self, name: str | None = None, elements=None) -> None:
         super().__init__(name)
         self.elements: list[ClassDiagramElement] = elements if elements else []
 
@@ -94,8 +94,8 @@ class ClassDiagramAttribute:
 
 
 class ClassDiagramMethodParameter:
-    def __init__(self, name: str, type: str, default_value: Any = None) -> None:
-        self.name = name
+    def __init__(self, name: str | None, type: str, default_value: Any = None) -> None:
+        self.name = name if name else ""
         self.type = type
         self.default_value = default_value
 
