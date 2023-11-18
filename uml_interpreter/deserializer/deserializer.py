@@ -10,29 +10,56 @@ The module includes the following:
 
 import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, NamedTuple
 
-from uml_interpreter.deserializer.constants import (
-    CLASS_IFACE_MAPPING,
-    CLASS_REL_MAPPING_TYPE,
-    CLASS_RELATIONSHIPS,
-    EA_ATTR,
-    EA_ATTR_MAPPING,
-    EA_TAGS,
-    ERROR_MESS,
-    TAGS_ERRORS,
-    ErrorType,
-)
+from uml_interpreter.deserializer.constants import (CLASS_IFACE_MAPPING,
+                                                    CLASS_REL_MAPPING_TYPE,
+                                                    CLASS_RELATIONSHIPS,
+                                                    EA_ATTR, EA_ATTR_MAPPING,
+                                                    EA_TAGS, ERROR_MESS,
+                                                    TAGS_ERRORS, ErrorType)
 from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
-from uml_interpreter.model.class_diagram import (
-    ClassDiagram,
-    ClassDiagramAttribute,
-    ClassDiagramElement,
-    ClassDiagramMethod,
-    ClassDiagramMethodParameter,
-    ClassRelationship,
-)
+from uml_interpreter.model.class_diagram import (ClassDiagram,
+                                                 ClassDiagramAttribute,
+                                                 ClassDiagramElement,
+                                                 ClassDiagramMethod,
+                                                 ClassDiagramMethodParameter,
+                                                 ClassRelationship)
 from uml_interpreter.source.source import FileSource, XMLSource
+
+
+class ElemWithId(NamedTuple):
+    elem: ClassDiagramElement | ClassRelationship | Any
+    id: str
+
+
+@dataclass
+class RelIds:
+    src_id: str
+    dst_id: str
+
+
+class RelWithIds(NamedTuple):
+    rel: ClassRelationship
+    ids: RelIds
+
+
+@dataclass
+class RelEndRoles:
+    src_role: str
+    dst_role: str
+
+
+class EndMinMax(NamedTuple):
+    min: str
+    max: str
+
+
+@dataclass
+class RelEndsMinMax:
+    src_minmax: EndMinMax
+    dst_minmax: EndMinMax
 
 
 class InvalidXMLError(Exception):
@@ -94,26 +121,22 @@ class XMLDeserializer(Deserializer):
 class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
     def __init__(self, source: XMLSource) -> None:
         self._source: XMLSource = source
-        self._temp_rel_ids = []
+        self._temp_rel_ids: list[RelWithIds] = []
 
     def _parse_model(self, tree: ET.ElementTree) -> UMLModel:
         root = self._get_root(tree)
 
         model_node = self._get_mandatory_node(root, "model")
 
-        elems: list[
-            tuple[ClassDiagramElement | ClassRelationship | Any, str]
-        ] = self._parse_elems(
-            model_node
-        )  # TODO Any -> Other diagram type elements
+        elems: list[ElemWithId] = self._parse_elems(model_node)
 
         self._assign_ends(
-            [rel[0] for rel in elems if isinstance(rel[0], ClassRelationship)],
-            [elem for elem in elems if isinstance(elem[0], ClassDiagramElement)],
+            [rel.elem for rel in elems if isinstance(rel.elem, ClassRelationship)],
+            [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)],
         )
 
         diagrams: list[UMLDiagram] = self._parse_diagrams(
-            root, [elem for elem in elems if isinstance(elem[0], ClassDiagramElement)]
+            root, [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)]
         )
 
         return UMLModel(
@@ -132,10 +155,8 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
             raise InvalidXMLError(TAGS_ERRORS[tag])
         return node
 
-    def _parse_elems(
-        self, model: ET.Element
-    ) -> list[tuple[ClassDiagramElement | Any, str]]:
-        elems_info: list[tuple[ClassDiagramElement | ClassRelationship | Any, str]] = []
+    def _parse_elems(self, model: ET.Element) -> list[ElemWithId]:
+        elems_info: list[ElemWithId] = []
 
         for elem in model.iter(EA_TAGS["elem"]):
             if elem_info := self._parse_elem(elem):
@@ -143,33 +164,39 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
 
         return elems_info
 
-    def _parse_elem(
-        self, elem: ET.Element
-    ) -> tuple[ClassDiagramElement | ClassRelationship | Any, str] | None:
+    def _parse_elem(self, elem: ET.Element) -> ElemWithId | None:
         if self._skip_package(elem):
             return None
         if self._try_build_class_or_iface(elem) or self._try_build_relationship(elem):
             if not (elem_id := elem.attrib.get(EA_ATTR["elem_id"])):
                 raise InvalidXMLError(ERROR_MESS[ErrorType.MODEL_ID_MISSING])
-            return (self._curr_elem, elem_id)
+            return ElemWithId(self._curr_elem, elem_id)
 
     def _assign_ends(
         self,
         rels: list[ClassRelationship],
-        elems: list[tuple[ClassDiagramElement, str]],
+        elems: list[ElemWithId],
     ):
         for rel in rels:
             for rel_ids in self._temp_rel_ids:
-                if rel == rel_ids[0]:
+                if rel == rel_ids.rel:
                     rel.source = next(
-                        (elem for elem, elem_id in elems if elem_id == rel_ids[1][0]),
+                        (
+                            elem
+                            for elem, elem_id in elems
+                            if elem_id == rel_ids.ids.src_id
+                        ),
                         None,
                     )
                     if isinstance(rel.source, ClassDiagramElement):
                         rel.source.relations_from.append(rel)
 
                     rel.target = next(
-                        (elem for elem, elem_id in elems if elem_id == rel_ids[1][1]),
+                        (
+                            elem
+                            for elem, elem_id in elems
+                            if elem_id == rel_ids.ids.dst_id
+                        ),
                         None,
                     )
                     if isinstance(rel.target, ClassDiagramElement):
@@ -180,7 +207,7 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
     def _parse_diagrams(
         self,
         root: ET.Element,
-        elems: list[tuple[ClassDiagramElement | Any, str]],
+        elems: list[ElemWithId],
     ) -> list[UMLDiagram]:
         diagrams: list[UMLDiagram] = []
 
@@ -193,16 +220,14 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
 
     def _populate_diagrams(
         self,
-        elems: list[tuple[ClassDiagramElement | Any, str]],
+        elems: list[ElemWithId],
         diagrams: list[UMLDiagram],
         diags: ET.Element,
     ) -> None:
         for diag in diags.iter(EA_TAGS["diag"]):
             diagrams.append(self._get_filled_diag(diag, elems))
 
-    def _get_filled_diag(
-        self, diag: ET.Element, elems: list[tuple[ClassDiagramElement | Any, str]]
-    ) -> UMLDiagram:
+    def _get_filled_diag(self, diag: ET.Element, elems: list[ElemWithId]) -> UMLDiagram:
         diag_name = self._get_mandatory_node(diag, "diag_propty").attrib.get(
             EA_ATTR["diag_propty_name"]
         )
@@ -215,7 +240,7 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
             elem_ids.append(diag_elem.attrib[EA_ATTR["diag_elem_id"]])
 
         uml_elems: list[ClassDiagramElement | Any] = [
-            elem[0] for elem in elems if elem[1] in elem_ids
+            elem.elem for elem in elems if elem.id in elem_ids
         ]
 
         if all(isinstance(elem, ClassDiagramElement) for elem in uml_elems):
@@ -294,41 +319,20 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
             rel_name = ""
 
         if elem.attrib[EA_ATTR["elem_type"]] in CLASS_RELATIONSHIPS:
-            end_ids: list[str] = ["", ""]
-            end_roles: list[str | None] = ["", ""]
-            end_minmax: list[tuple[str, str]] = [("", ""), ("", "")]
+            end_ids: RelIds = RelIds("", "")
+            end_roles: RelEndRoles = RelEndRoles("", "")
+            end_minmax: RelEndsMinMax = RelEndsMinMax(
+                EndMinMax("", ""), EndMinMax("", "")
+            )
 
             for end in elem.iter(EA_TAGS["end"]):
-                if "EAID_dst" in end.attrib[EA_ATTR["end_id"]]:
-                    end_ids[1] = self._get_mandatory_node(end, "end_type").attrib[
-                        EA_ATTR["end_type_dst"]
-                    ]
-                    low = ""
-                    high = ""
-                    for src_vals in end.findall(EA_TAGS["end_low"]):
-                        dst_low = src_vals.attrib[EA_ATTR["end_low_type"]]
-                        if dst_low == "uml:LiteralUnlimitedNatural":
-                            low = "inf"
-                        else:
-                            low = src_vals.attrib[EA_ATTR["end_low_val"]]
-
-                    for src_vals in end.findall(EA_TAGS["end_high"]):
-                        dst_high = src_vals.attrib[EA_ATTR["end_high_type"]]
-                        if dst_high == "uml:LiteralUnlimitedNatural":
-                            high = "inf"
-                        else:
-                            high = src_vals.attrib[EA_ATTR["end_high_val"]]
-
-                    end_minmax[1] = (low, high)
-                    end_roles[1] = end.attrib.get(EA_ATTR["end_name_src"])
-
-                elif "EAID_src" in end.attrib[EA_ATTR["end_id"]]:
-                    end_ids[0] = self._get_mandatory_node(end, "end_type").attrib[
+                low = ""
+                high = ""
+                if "EAID_src" in end.attrib[EA_ATTR["end_id"]]:
+                    end_ids.src_id = self._get_mandatory_node(end, "end_type").attrib[
                         EA_ATTR["end_type_src"]
                     ]
 
-                    low = ""
-                    high = ""
                     for src_vals in end.findall(EA_TAGS["end_low"]):
                         src_low = src_vals.attrib[EA_ATTR["end_low_type"]]
                         if src_low == "uml:LiteralUnlimitedNatural":
@@ -343,19 +347,50 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
                         else:
                             high = src_vals.attrib[EA_ATTR["end_high_val"]]
 
-                    end_minmax[0] = (low, high)
-                    end_roles[0] = end.attrib.get(EA_ATTR["end_name_src"])
+                    end_minmax.src_minmax = EndMinMax(low, high)
+
+                    if role := end.attrib.get(EA_ATTR["end_name_src"]):
+                        end_roles.src_role = role
+
+                elif "EAID_dst" in end.attrib[EA_ATTR["end_id"]]:
+                    end_ids.dst_id = self._get_mandatory_node(end, "end_type").attrib[
+                        EA_ATTR["end_type_dst"]
+                    ]
+
+                    for src_vals in end.findall(EA_TAGS["end_low"]):
+                        dst_low = src_vals.attrib[EA_ATTR["end_low_type"]]
+                        if dst_low == "uml:LiteralUnlimitedNatural":
+                            low = "inf"
+                        else:
+                            low = src_vals.attrib[EA_ATTR["end_low_val"]]
+
+                    for src_vals in end.findall(EA_TAGS["end_high"]):
+                        dst_high = src_vals.attrib[EA_ATTR["end_high_type"]]
+                        if dst_high == "uml:LiteralUnlimitedNatural":
+                            high = "inf"
+                        else:
+                            high = src_vals.attrib[EA_ATTR["end_high_val"]]
+
+                    end_minmax.dst_minmax = EndMinMax(low, high)
+
+                    if role := end.attrib.get(EA_ATTR["end_name_dst"]):
+                        end_roles.dst_role = role
 
             if not (
-                all(isinstance(end, str) for end in end_ids)
-                and all(end != "" for end in end_ids)
+                all(isinstance(end, str) for end in vars(end_ids).values())
+                and all(end != "" for end in vars(end_ids).values())
             ):
                 raise InvalidXMLError(ERROR_MESS[ErrorType.REL_ENDS])
 
             type = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTR["elem_type"]]]
             self._curr_elem = ClassRelationship(
-                type, rel_name, end_roles[0], end_roles[1], end_minmax[0], end_minmax[1]
+                type,
+                rel_name,
+                end_roles.src_role,
+                end_roles.dst_role,
+                end_minmax.src_minmax,
+                end_minmax.dst_minmax,
             )
-            self._temp_rel_ids.append((self._curr_elem, end_ids))
+            self._temp_rel_ids.append(RelWithIds(self._curr_elem, end_ids))
             return True
         return False
