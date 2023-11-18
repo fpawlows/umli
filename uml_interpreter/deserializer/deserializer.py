@@ -26,7 +26,7 @@ from uml_interpreter.model.class_diagram import (ClassDiagram,
                                                  ClassDiagramMethod,
                                                  ClassDiagramMethodParameter,
                                                  ClassRelationship)
-from uml_interpreter.source.source import FileSource, XMLSource
+from uml_interpreter.source.source import FileSource, StringSource, XMLSource
 
 
 class ElemWithId(NamedTuple):
@@ -122,6 +122,14 @@ class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
     def __init__(self, source: XMLSource) -> None:
         self._source: XMLSource = source
         self._temp_rel_ids: list[RelWithIds] = []
+
+    @classmethod
+    def from_string(cls, string):
+        return cls(StringSource(string))
+
+    @classmethod
+    def from_path(cls, path):
+        return cls(FileSource(path))
 
     def _parse_model(self, tree: ET.ElementTree) -> UMLModel:
         root = self._get_root(tree)
