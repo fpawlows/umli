@@ -1,9 +1,10 @@
 from typing import Optional
-from class_diagram import ClassDiagramElement, ClassRelationship, ClassDiagramMethod
-from base_classes import StructuralDiagram
+
+import uml_interpreter.model.base_classes as bc
+import uml_interpreter.model.class_diagram as cd
 
 
-class ComponentDiagram(StructuralDiagram):
+class ComponentDiagram(bc.StructuralDiagram):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.components: list[Component] = []
@@ -16,12 +17,14 @@ class ComponentRelationMember:
 
 
 class ComponentRelationship:
-    def __init__(self, source: ComponentRelationMember, target: ComponentRelationMember) -> None:
+    def __init__(
+        self, source: ComponentRelationMember, target: ComponentRelationMember
+    ) -> None:
         self.source = source
         source.relations_from.append(self)
         self.target = target
         target.relations_to.append(self)
-        self.related_relationship: Optional[ClassRelationship] = None
+        self.related_relationship: Optional[cd.ClassRelationship] = None
 
 
 class Component(ComponentRelationMember):
@@ -30,7 +33,7 @@ class Component(ComponentRelationMember):
         self.children: list[Component] = []
         self.ports: list[Port] = []
         self.interfaces: list[ComponentInterface] = []
-        self.elements: list[ClassDiagramElement] = []
+        self.elements: list[cd.ClassDiagramElement] = []
         self.name: str = ""
 
 
@@ -43,7 +46,7 @@ class Port(ComponentRelationMember):
 class ComponentInterface(ComponentRelationMember):
     def __init__(self) -> None:
         super().__init__()
-        self.methods = list[ClassDiagramMethod] = []
+        self.methods: list[cd.ClassDiagramMethod] = []
         self.name: str = ""
 
 

@@ -1,11 +1,11 @@
 from enum import Enum
 from typing import Optional
 
-from class_diagram import ClassDiagramMethod
-from base_classes import BehavioralDiagram
+import uml_interpreter.model.base_classes as bc
+import uml_interpreter.model.class_diagram as cd
 
 
-class SequenceDiagram(BehavioralDiagram):
+class SequenceDiagram(bc.BehavioralDiagram):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.actors: list[SequenceActor] = []
@@ -38,7 +38,7 @@ class SequenceMessage(LifespanEvent):
         sender.messages_from.append(self)
         self.receiver = receiver
         receiver.messages_to.append(self)
-        self.related_method: Optional[ClassDiagramMethod] = None
+        self.related_method: Optional[cd.ClassDiagramMethod] = None
         self.status: SequenceMessageStatus = SequenceMessageStatus.SUCCEEDED
         self.display_text: Optional[str] = None
 
