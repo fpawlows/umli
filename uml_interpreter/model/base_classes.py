@@ -5,7 +5,7 @@ import uml_interpreter.visitor.visitor as v
 
 class UMLModel:
     def __init__(self, diagrams=None, filename=None) -> None:
-        self.diagrams: list[UMLDiagram] = diagrams if diagrams else []
+        self.diagrams: list[UMLDiagram] = diagrams or []
         self.filename: Optional[str] = filename
 
     def accept(self, visitor: v.ModelVisitor):
@@ -17,7 +17,7 @@ class UMLModel:
 
 class UMLDiagram:
     def __init__(self, name: str | None = None) -> None:
-        self.name: str = name if name else ""
+        self.name: str = name or ""
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_diagram(self)

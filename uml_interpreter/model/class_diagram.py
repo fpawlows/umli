@@ -8,7 +8,7 @@ import uml_interpreter.visitor.visitor as v
 class ClassDiagram(bc.StructuralDiagram):
     def __init__(self, name: str | None = None, elements=None) -> None:
         super().__init__(name)
-        self.elements: list[ClassDiagramElement] = elements if elements else []
+        self.elements: list[ClassDiagramElement] = elements or []
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_diagram(self)
@@ -55,13 +55,13 @@ class ClassRelationship:
         target: ClassDiagramElement | None = None,
     ) -> None:
         self.source = source
-        self.source_role = source_role if source_role else ""
+        self.source_role = source_role or ""
         self.source_minmax = source_minmax
         if isinstance(source, ClassDiagramElement):
             source.relations_from.append(self)
 
         self.target = target
-        self.target_role = target_role if target_role else ""
+        self.target_role = target_role or ""
         self.target_minmax = target_minmax
         if isinstance(target, ClassDiagramElement):
             target.relations_to.append(self)
@@ -76,7 +76,7 @@ class ClassRelationship:
 class ClassDiagramMethod:
     def __init__(self, name: str, ret_type: str, parameters=None) -> None:
         self.name = name
-        self.parameters: list[ClassDiagramAttribute] = parameters if parameters else []
+        self.parameters: list[ClassDiagramAttribute] = parameters or []
         self.ret_type = ret_type
 
     def accept(self, visitor: v.ModelVisitor):
@@ -95,7 +95,7 @@ class ClassDiagramAttribute:
 
 class ClassDiagramMethodParameter:
     def __init__(self, name: str | None, type: str, default_value: Any = None) -> None:
-        self.name = name if name else ""
+        self.name = name or ""
         self.type = type
         self.default_value = default_value
 
