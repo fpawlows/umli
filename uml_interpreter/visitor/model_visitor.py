@@ -1,11 +1,3 @@
-"""
-UML Model visitors module
-
-The module includes the following:
-- ModelVisitor
-- ModelPrinter
-"""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
