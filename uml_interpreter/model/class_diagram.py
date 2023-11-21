@@ -2,7 +2,7 @@ from typing import Any
 
 import uml_interpreter.model.base_classes as bc
 import uml_interpreter.model.sequence_diagram as sd
-import uml_interpreter.visitor.visitor as v
+import uml_interpreter.visitor.model_visitor as v
 
 
 class ClassDiagram(bc.StructuralDiagram):

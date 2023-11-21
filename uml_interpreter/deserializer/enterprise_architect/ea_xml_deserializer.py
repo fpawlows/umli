@@ -1,124 +1,34 @@
-"""
-UML Model deserializer module
-
-The module includes the following:
-- InvalidXMLError
-- Deserializer
-- XMLDeserializer
-- EnterpriseArchitectXMLDeserializer
-"""
-
-import xml.etree.ElementTree as ET
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, NamedTuple
-
-from uml_interpreter.deserializer.constants import (CLASS_IFACE_MAPPING,
-                                                    CLASS_REL_MAPPING_TYPE,
-                                                    CLASS_RELATIONSHIPS,
-                                                    EA_ATTR, EA_ATTR_MAPPING,
-                                                    EA_TAGS, ERROR_MESS,
-                                                    TAGS_ERRORS, ErrorType)
+from typing import Any
+from uml_interpreter.deserializer.constants import (
+    CLASS_IFACE_MAPPING,
+    CLASS_REL_MAPPING_TYPE,
+    CLASS_RELATIONSHIPS,
+    EA_ATTR,
+    EA_ATTR_MAPPING,
+    EA_TAGS,
+)
+from uml_interpreter.deserializer.abstract import XMLDeserializer
+from uml_interpreter.deserializer.enterprise_architect.utils import ElemWithId, EndMinMax, RelEndRoles, RelEndsMinMax, RelIds, RelWithIds
+from uml_interpreter.deserializer.errors import (
+    ERROR_MESS,
+    TAGS_ERRORS,
+    ErrorType,
+    InvalidXMLError,
+)
 from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
-from uml_interpreter.model.class_diagram import (ClassDiagram,
-                                                 ClassDiagramAttribute,
-                                                 ClassDiagramElement,
-                                                 ClassDiagramMethod,
-                                                 ClassDiagramMethodParameter,
-                                                 ClassRelationship)
+from uml_interpreter.model.class_diagram import (
+    ClassDiagram,
+    ClassDiagramAttribute,
+    ClassDiagramElement,
+    ClassDiagramMethod,
+    ClassDiagramMethodParameter,
+    ClassRelationship,
+)
 from uml_interpreter.source.source import FileSource, StringSource, XMLSource
+import xml.etree.ElementTree as ET
 
 
-class ElemWithId(NamedTuple):
-    elem: ClassDiagramElement | ClassRelationship | Any
-    id: str
-
-
-@dataclass
-class RelIds:
-    src_id: str
-    dst_id: str
-
-
-class RelWithIds(NamedTuple):
-    rel: ClassRelationship
-    ids: RelIds
-
-
-@dataclass
-class RelEndRoles:
-    src_role: str
-    dst_role: str
-
-
-class EndMinMax(NamedTuple):
-    min: str
-    max: str
-
-
-@dataclass
-class RelEndsMinMax:
-    src_minmax: EndMinMax
-    dst_minmax: EndMinMax
-
-
-class InvalidXMLError(Exception):
-    """
-    Exception thrown by Deseralizer, caused by invalid XML structure.
-
-    Error message structure:
-        Parser Error: {error_message}
-    """
-
-    def __init__(self, msg: str) -> None:
-        """
-        Arguments:
-            msg {str} -- error message
-        """
-        self.msg = msg
-
-    def __str__(self):
-        return f"Parser Error: {self.msg}"
-
-
-class Deserializer(ABC):
-    @abstractmethod
-    def read_model(self) -> UMLModel:
-        pass
-
-    @property
-    @abstractmethod
-    def source(self):
-        pass
-
-    @source.setter
-    @abstractmethod
-    def source(self, source):
-        pass
-
-
-class XMLDeserializer(Deserializer):
-    def read_model(self) -> UMLModel:
-        try:
-            tree: ET.ElementTree = self.source.read_tree()
-            return self._parse_model(tree)
-        except ET.ParseError as exc:
-            raise InvalidXMLError(exc.msg)
-
-    @property
-    def source(self) -> XMLSource:
-        return self._source
-
-    @source.setter
-    def source(self, source: XMLSource) -> None:
-        self._source = source
-
-    @abstractmethod
-    def _parse_model(self, tree: ET.ElementTree) -> UMLModel:
-        pass
-
-
-class EnterpriseArchitectXMLDeserializer(XMLDeserializer):
+class EAXMLDeserializer(XMLDeserializer):
     def __init__(self, source: XMLSource) -> None:
         self._source: XMLSource = source
         self._temp_rel_ids: list[RelWithIds] = []

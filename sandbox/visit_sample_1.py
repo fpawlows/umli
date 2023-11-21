@@ -1,6 +1,7 @@
 import sys
 import os
 
+
 sys.path.append(os.getcwd())
 
 if __name__ == "__main__":
@@ -9,6 +10,4 @@ if __name__ == "__main__":
     )
 
     model = EAXMLDeserializer.from_path("samples/sample_1.xml").read_model()
-
-    diagram = model.diagrams[0]
-    pass
+    model.print()

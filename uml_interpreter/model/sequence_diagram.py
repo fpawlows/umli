@@ -56,16 +56,16 @@ class AsyncSequenceMessage(SequenceMessage):
 
 
 class SequenceFragment(SequenceDiagram, LifespanEvent):
-    def __init__(self, parent: SequenceDiagram) -> None:
-        super().__init__()
+    def __init__(self, parent: SequenceDiagram, name: str) -> None:
+        super().__init__(name)
         self.actors = parent.actors
 
 
 class LoopSequenceFragment(SequenceFragment):
-    def __init__(self, parent: SequenceDiagram) -> None:
-        super().__init__(parent)
+    def __init__(self, parent: SequenceDiagram, name: str) -> None:
+        super().__init__(parent, name)
 
 
 class ConditionSequenceFragment(SequenceFragment):
-    def __init__(self, parent: SequenceDiagram) -> None:
-        super().__init__(parent)
+    def __init__(self, parent: SequenceDiagram, name: str) -> None:
+        super().__init__(parent, name)
