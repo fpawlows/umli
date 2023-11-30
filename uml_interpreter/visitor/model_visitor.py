@@ -109,28 +109,28 @@ class ModelPrinter(ModelVisitor):
         self.decr_ident()
 
     def _visit_class_diagram_element_data(self, elem: ClassDiagramElement):
-        if len(elem.relations_from) > 0:
-            self.print("Relationships (source):")
+        if elem.relations_from:
+            self.print("Relationships (target):")
             self.incr_ident()
             for rel in elem.relations_from:
                 rel.accept(self)
             self.decr_ident()
 
-        if len(elem.relations_to) > 0:
-            self.print("Relationships (target):")
+        if elem.relations_to:
+            self.print("Relationships (source):")
             self.incr_ident()
             for rel in elem.relations_to:
                 rel.accept(self)
             self.decr_ident()
 
-        if len(elem.attributes) > 0:
+        if elem.attributes:
             self.print("Attributes:")
             self.incr_ident()
             for attr in elem.attributes:
                 attr.accept(self)
             self.decr_ident()
 
-        if len(elem.methods) > 0:
+        if elem.methods:
             self.print("Methods:")
             self.incr_ident()
             for meth in elem.methods:
