@@ -135,7 +135,7 @@ class ClassRelationship:
     @target_side.setter
     def target_side(self, side: RelationshipSide) -> None:
         self._target_side = side
-        side.element.add_relationship_to(self)
+        side.element.add_relationship_from(self)
 
     @target.setter
     def target(self, new_target_element: ClassDiagramElement) -> None:
@@ -148,7 +148,7 @@ class ClassRelationship:
         if isinstance(new_target_element, ClassDiagramElement):
             # TODO: should it erase previous multiplicity and role?
             self._target_side.element = new_target_element
-            new_target_element.add_relationship_to(self)
+            new_target_element.add_relationship_from(self)
 
         else:
             """
