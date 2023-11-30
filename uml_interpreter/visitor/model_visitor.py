@@ -144,8 +144,8 @@ class ModelPrinter(ModelVisitor):
             rel.target, ClassDiagramElement
         ):
             self.print(
-                f"{rel.type} ({rel.name}) - {rel.source.name} ({rel.source_role}) [{rel.source_minmax[0]}...{rel.source_minmax[1]}] -> \
-                    [{rel.target_minmax[0]}...{rel.target_minmax[1]}] ({rel.target_role}) {rel.target.name}"
+                f"{rel.type} ({rel.name}) - {rel.source.name} ({rel.source_side.role}) [{rel.source_side.min_max_multiplicity[0]}...{rel.source_side.min_max_multiplicity[1]}] -> \
+                    [{rel.target_side.min_max_multiplicity[0]}...{rel.target_side.min_max_multiplicity[1]}] ({rel.target_side.role}) {rel.target.name}"
             )
 
     def visit_class_diagram_attribute(self, attr: ClassDiagramAttribute):

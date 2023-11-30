@@ -9,5 +9,5 @@ if __name__ == "__main__":
         EAXMLDeserializer,
     )
 
-    model = EAXMLDeserializer.from_path("samples/sample_1.xml").read_model()
+    model = EAXMLDeserializer.from_path("../samples/sample_1.xml").read_model()
     model.print()

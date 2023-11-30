@@ -108,10 +108,10 @@ class EAXMLDeserializer(XMLDeserializer):
 
         elems: list[ElemWithId] = self._parse_elems(model_node)
 
-        self._assign_ends(
-            [rel.elem for rel in elems if isinstance(rel.elem, ClassRelationship)],
-            [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)],
-        )
+        # self._assign_ends(
+        #     [rel.elem for rel in elems if isinstance(rel.elem, ClassRelationship)],
+        #     [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)],
+        # )
 
         diagrams: list[UMLDiagram] = self._parse_diagrams(
             root, [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)]
@@ -133,7 +133,7 @@ class EAXMLDeserializer(XMLDeserializer):
         Retrieves the node of XML document containing specified tag.
         Its absence raises InvalidXMLError.
         """
-        if (node := self._get_node_by_tag(self, root, tag)) is None:
+        if (node := self._get_node_by_tag(root, tag)) is None:
             raise InvalidXMLError(TAGS_ERRORS[tag])
         return node
 
@@ -174,14 +174,14 @@ class EAXMLDeserializer(XMLDeserializer):
             else:
                 raise InvalidXMLError(ERROR_MESS[ErrorType.MODEL_ID_MISSING])
 
-        return ElemWithId(self._curr_elem, elem_id)
+            return ElemWithId(parsed_elem, elem_id)
 
     @evaluate_elements_afterwards()
     def _parse_elems(self, model_node: ET.Element) -> list[ElemWithId]:
         """
         Functions dependent on the initialization of the element with id given as the key of the dictionary.
         """
-        elements_info = [self._parse_elem(element) for element in model_node.iter(EA_TAGS["elem"])]
+        elements_info = [element_info for element in model_node.iter(EA_TAGS["elem"]) if (element_info := self._parse_elem(element)) is not None]
         return elements_info
 
 
@@ -413,8 +413,8 @@ class EAXMLDeserializer(XMLDeserializer):
                 end_minmax.dst_minmax,
             )
 
-            self._id_to_evaluation_queue.update(end_ids.src_id, SetRelationshipSource(curr_elem))
-            self._id_to_evaluation_queue.update(end_ids.dst_id, SetRelationshipTarget(curr_elem))
+            self._id_to_evaluation_queue[end_ids.src_id].append(SetRelationshipSource(curr_elem))
+            self._id_to_evaluation_queue[end_ids.dst_id].append(SetRelationshipTarget(curr_elem))
             # self._temp_rel_ids.append(RelWithIds(curr_elem, end_ids))
             return curr_elem
         return None
