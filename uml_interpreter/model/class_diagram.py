@@ -52,7 +52,6 @@ class ClassDiagramInterface(ClassDiagramElement):
 
 
 class ClassRelationship:
-
     @dataclass
     class RelationshipSide:
         element: ClassDiagramElement
@@ -83,8 +82,12 @@ class ClassRelationship:
         source: Optional[ClassDiagramElement] = None,
         target: Optional[ClassDiagramElement] = None,
     ) -> None:
-        self._source_side = ClassRelationship.RelationshipSide(source, source_role, source_minmax)
-        self._target_side = ClassRelationship.RelationshipSide(target, target_role, target_minmax)
+        self._source_side = ClassRelationship.RelationshipSide(
+            source, source_role, source_minmax
+        )
+        self._target_side = ClassRelationship.RelationshipSide(
+            target, target_role, target_minmax
+        )
 
         self.type = type
         # TODO: make enum
@@ -118,10 +121,17 @@ class ClassRelationship:
 
         else:
             """
-            TODO: raise custom exception """
+            TODO: raise custom exception"""
 
-    def create_source_side(self, source_element: ClassDiagramElement, role: Optional[str], min_max_multiplicity: Optional[tuple[str, str]]) -> None:
-        new_source_side = ClassRelationship.RelationshipSide(source_element, role, min_max_multiplicity)
+    def create_source_side(
+        self,
+        source_element: ClassDiagramElement,
+        role: Optional[str],
+        min_max_multiplicity: Optional[tuple[str, str]],
+    ) -> None:
+        new_source_side = ClassRelationship.RelationshipSide(
+            source_element, role, min_max_multiplicity
+        )
         self.source_side = new_source_side
 
     @property
@@ -152,10 +162,17 @@ class ClassRelationship:
 
         else:
             """
-            TODO: raise custom exception """
+            TODO: raise custom exception"""
 
-    def create_target_side(self, target_element: ClassDiagramElement, role: Optional[str], min_max_multiplicity: Optional[tuple[str, str]]) -> None:
-        new_target_side = ClassRelationship.RelationshipSide(target_element, role, min_max_multiplicity)
+    def create_target_side(
+        self,
+        target_element: ClassDiagramElement,
+        role: Optional[str],
+        min_max_multiplicity: Optional[tuple[str, str]],
+    ) -> None:
+        new_target_side = ClassRelationship.RelationshipSide(
+            target_element, role, min_max_multiplicity
+        )
         self.target_side = new_target_side
 
     def accept(self, visitor: v.ModelVisitor):
@@ -183,7 +200,9 @@ class ClassDiagramAttribute:
 
 
 class ClassDiagramMethodParameter:
-    def __init__(self, name: Optional[str], type: str, default_value: Any = None) -> None:
+    def __init__(
+        self, name: Optional[str], type: str, default_value: Any = None
+    ) -> None:
         self.name = name or ""
         self.type = type
         self.default_value = default_value

@@ -1,8 +1,9 @@
 from typing import Any, Optional, Callable, Iterable
 from functools import wraps
-import logging
-# TODO: add Logger instance 
 from collections import defaultdict, deque
+
+import xml.etree.ElementTree as ET
+
 from uml_interpreter.deserializer.enterprise_architect.constants import (
     CLASS_IFACE_MAPPING,
     CLASS_REL_MAPPING_TYPE,
@@ -12,13 +13,22 @@ from uml_interpreter.deserializer.enterprise_architect.constants import (
     EA_TAGS,
 )
 from uml_interpreter.deserializer.abstract import XMLDeserializer
-from uml_interpreter.deserializer.enterprise_architect.utils import ElemWithId, EndMinMax, RelEndRoles, RelEndsMinMax, RelIds, RelWithIds, SetRelationshipSource, SetRelationshipTarget
+from uml_interpreter.deserializer.enterprise_architect.utils import (
+    ElemWithId,
+    EndMinMax,
+    RelEndRoles,
+    RelEndsMinMax,
+    RelIds,
+    RelWithIds,
+    SetRelationshipSource,
+    SetRelationshipTarget,
+)
 from uml_interpreter.deserializer.errors import (
     ERROR_MESS,
     TAGS_ERRORS,
     ErrorType,
     InvalidXMLError,
-    IdMismatchException
+    IdMismatchException,
 )
 from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
 from uml_interpreter.model.class_diagram import (
@@ -30,7 +40,6 @@ from uml_interpreter.model.class_diagram import (
     ClassRelationship,
 )
 from uml_interpreter.source.source import FileSource, StringSource, XMLSource
-import xml.etree.ElementTree as ET
 
 
 class EAXMLDeserializer(XMLDeserializer):
@@ -38,6 +47,7 @@ class EAXMLDeserializer(XMLDeserializer):
     """
     Classes ignored during parsing.
     """
+    # TODO: move to constants / new config file?
 
     def __init__(self, source: XMLSource) -> None:
         self._source: XMLSource = source
@@ -65,21 +75,20 @@ class EAXMLDeserializer(XMLDeserializer):
                 if blocking:
                     raise IdMismatchException(message) from ex
                 else:
-                    logging.log('INFO', message)
+                    logging.log("INFO", message)
                     continue
-                
+
             while evaluation_queue:
                 function_to_call = evaluation_queue.popleft()
                 function_to_call(element_instance)
 
-
     def evaluate_elements_afterwards(blocking: bool = False) -> Callable:
         """
         Decorator that evaluates all elements from the evaluation queue.
-        :arg blocking - if set to True, it raises IdMismatchException when ID present as a key in evaluation 
+        :arg blocking - if set to True, it raises IdMismatchException when ID present as a key in evaluation
             queue is not present in the ID to instance mapping.
         """
-        
+
         def wrapper(func: Callable) -> Callable:
             @wraps(func)
             def inner(self, *args, **kwargs) -> Any:
@@ -89,8 +98,9 @@ class EAXMLDeserializer(XMLDeserializer):
                 returned_value = func(self, *args, **kwargs)
                 self._evaluate_elements(blocking)
                 return returned_value
-            
+
             return inner
+
         return wrapper
 
     @classmethod
@@ -104,14 +114,9 @@ class EAXMLDeserializer(XMLDeserializer):
     def _parse_model(self, tree: ET.ElementTree) -> UMLModel:
         root = self._get_root(tree)
 
-        model_node = self._get_mandatory_node(root, 'model')
+        model_node = self._get_mandatory_node(root, "model")
 
         elems: list[ElemWithId] = self._parse_elems(model_node)
-
-        # self._assign_ends(
-        #     [rel.elem for rel in elems if isinstance(rel.elem, ClassRelationship)],
-        #     [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)],
-        # )
 
         diagrams: list[UMLDiagram] = self._parse_diagrams(
             root, [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)]
@@ -140,29 +145,11 @@ class EAXMLDeserializer(XMLDeserializer):
     def _get_node_by_tag(self, root: ET.Element, tag: str) -> ET.Element:
         return root.find(EA_TAGS[tag])
 
-    # def _parse_elems(self, model_node: ET.Element) -> list[ElemWithId]:
-    #     elements_info: list[ElemWithId] = [
-    #         element_info
-    #         for element in
-    #         model_node.iter(EA_TAGS["elem"])
-    #         if (element_info := self._parse_elem(element))
-    #     ]
-
-    #     return elements_info
-
-    # def _parse_elem(self, elem: ET.Element) -> Optional[ElemWithId]:
-    #     if not self._is_supported_element(elem):
-    #         return None
-    #     if self._try_build_class_or_iface(elem) or self._try_build_relationship(elem):
-    #         if not (elem_id := elem.attrib.get(EA_ATTR["elem_id"])):
-    #             raise InvalidXMLError(ERROR_MESS[ErrorType.MODEL_ID_MISSING])
-    #         return ElemWithId(self._curr_elem, elem_id)
-
     def _parse_elem(self, elem: ET.Element) -> Optional[ElemWithId]:
         if not self._is_supported_element(elem):
             return None
 
-        if (elem_id := elem.attrib.get(EA_ATTR["elem_id"])):
+        if elem_id := elem.attrib.get(EA_ATTR["elem_id"]):
 
             if parsed_elem := self._try_build_class_or_iface(elem):
                 self._id_to_instance_mapping[elem_id] = parsed_elem
@@ -181,41 +168,12 @@ class EAXMLDeserializer(XMLDeserializer):
         """
         Functions dependent on the initialization of the element with id given as the key of the dictionary.
         """
-        elements_info = [element_info for element in model_node.iter(EA_TAGS["elem"]) if (element_info := self._parse_elem(element)) is not None]
+        elements_info = [
+            element_info
+            for element in model_node.iter(EA_TAGS["elem"])
+            if (element_info := self._parse_elem(element)) is not None
+        ]
         return elements_info
-
-
-        # def _assign_ends(
-    #     self,
-    #     rels: list[ClassRelationship],
-    #     elems: list[ElemWithId],
-    # ):
-    #     for rel in rels:
-    #         for rel_ids in self._temp_rel_ids:
-    #             if rel == rel_ids.rel:
-    #                 rel.source = next(
-    #                     (
-    #                         elem
-    #                         for elem, elem_id in elems
-    #                         if elem_id == rel_ids.ids.src_id
-    #                     ),
-    #                     None,
-    #                 )
-    #                 if isinstance(rel.source, ClassDiagramElement):
-    #                     rel.source.relations_from.append(rel)
-    #
-    #                 rel.target = next(
-    #                     (
-    #                         elem
-    #                         for elem, elem_id in elems
-    #                         if elem_id == rel_ids.ids.dst_id
-    #                     ),
-    #                     None,
-    #                 )
-    #                 if isinstance(rel.target, ClassDiagramElement):
-    #                     rel.target.relations_to.append(rel)
-    #
-    #     self._temp_rel_ids = []
 
     def _parse_diagrams(
         self,
@@ -261,15 +219,15 @@ class EAXMLDeserializer(XMLDeserializer):
         else:
             raise InvalidXMLError(ERROR_MESS[ErrorType.MIXED_ELEMS])
 
-
     def _is_supported_element(self, elem: ET.Element) -> bool:
         is_supported_element = (
-            elem.attrib[EA_ATTR["elem_type"]]
-            not in self.UNSUPPORTED_XML_ELEMENTS
-            )
+            elem.attrib[EA_ATTR["elem_type"]] not in self.UNSUPPORTED_XML_ELEMENTS
+        )
         return is_supported_element
 
-    def _try_build_class_or_iface(self, elem: ET.Element) -> Optional[ClassDiagramElement]:
+    def _try_build_class_or_iface(
+        self, elem: ET.Element
+    ) -> Optional[ClassDiagramElement]:
 
         if ElemClass := CLASS_IFACE_MAPPING.get(elem.attrib[EA_ATTR["elem_type"]]):
             curr_elem = ElemClass(elem.attrib[EA_ATTR["elem_name"]])
@@ -280,7 +238,7 @@ class EAXMLDeserializer(XMLDeserializer):
             curr_elem.attributes = attrs
             curr_elem.methods = meths
             return curr_elem
-        
+
         return None
 
     def _build_attributes(self, elem: ET.Element) -> list[ClassDiagramAttribute]:
@@ -413,8 +371,12 @@ class EAXMLDeserializer(XMLDeserializer):
                 end_minmax.dst_minmax,
             )
 
-            self._id_to_evaluation_queue[end_ids.src_id].append(SetRelationshipSource(curr_elem))
-            self._id_to_evaluation_queue[end_ids.dst_id].append(SetRelationshipTarget(curr_elem))
+            self._id_to_evaluation_queue[end_ids.src_id].append(
+                SetRelationshipSource(curr_elem)
+            )
+            self._id_to_evaluation_queue[end_ids.dst_id].append(
+                SetRelationshipTarget(curr_elem)
+            )
             # self._temp_rel_ids.append(RelWithIds(curr_elem, end_ids))
             return curr_elem
         return None
