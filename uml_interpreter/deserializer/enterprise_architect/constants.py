@@ -136,7 +136,7 @@ EA_ATTR_EXT: dict[str, str] = {
 Enterprise Architect alternative XML attributes
 """
 
-CLASS_RELATIONSHIPS: list[str] = ["uml:Association"]
+CLASS_RELATIONSHIPS_TYPES: list[str] = ["uml:Association"]
 """
 UML Class Relationships types
 """

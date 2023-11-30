@@ -58,3 +58,9 @@ class InvalidXMLError(Exception):
 
     def __str__(self):
         return f"Parser Error: {self.msg}"
+
+
+class IdMismatchException(InvalidXMLError):
+    """
+    Exception thrown when no matching ID found in the XML source file.
+    """
