@@ -1,4 +1,4 @@
-from typing import Any, Optional, Callable, Iterable
+from typing import Any, Optional, Callable
 from functools import wraps
 from collections import defaultdict, deque
 import logging
@@ -36,9 +36,30 @@ from uml_interpreter.model.diagrams.class_diagram import (
     ClassDiagramMethod,
     ClassDiagramMethodParameter,
     ClassRelationship,
-    RelationshipType,
 )
 from uml_interpreter.source.source import FileSource, StringSource, XMLSource
+
+
+def evaluate_elements_afterwards(blocking: bool = False) -> Callable:
+    """
+    Decorator that evaluates all elements from the evaluation queue.
+    :arg blocking - if set to True, it raises IdMismatchException when ID present as a key in evaluation
+        queue is not present in the ID to instance mapping.
+    """
+
+    def wrapper(func: Callable) -> Callable:
+        @wraps(func)
+        def inner(self, *args, **kwargs) -> Any:
+            """
+            Function used for decoration of class methods, therefore self is expected to always be the first argument.
+            """
+            returned_value = func(self, *args, **kwargs)
+            self._evaluate_elements(blocking)
+            return returned_value
+
+        return inner
+
+    return wrapper
 
 
 class EAXMLDeserializer(XMLDeserializer):
@@ -46,7 +67,6 @@ class EAXMLDeserializer(XMLDeserializer):
     """
     Classes ignored during parsing.
     """
-    # TODO: move to constants / new config file?
 
     def __init__(self, source: XMLSource) -> None:
         self._source: XMLSource = source
@@ -71,33 +91,12 @@ class EAXMLDeserializer(XMLDeserializer):
                 if blocking:
                     raise IdMismatchException(message) from ex
                 else:
-                    logging.log("INFO", message)
+                    logging.log(logging.INFO, message)
                     continue
 
             while evaluation_queue:
                 function_to_call = evaluation_queue.popleft()
                 function_to_call(element_instance)
-
-    def evaluate_elements_afterwards(blocking: bool = False) -> Callable:
-        """
-        Decorator that evaluates all elements from the evaluation queue.
-        :arg blocking - if set to True, it raises IdMismatchException when ID present as a key in evaluation
-            queue is not present in the ID to instance mapping.
-        """
-
-        def wrapper(func: Callable) -> Callable:
-            @wraps(func)
-            def inner(self, *args, **kwargs) -> Any:
-                """
-                Function used for decoration of class methods, therefore self is expected to always be the first argument.
-                """
-                returned_value = func(self, *args, **kwargs)
-                self._evaluate_elements(blocking)
-                return returned_value
-
-            return inner
-
-        return wrapper
 
     @classmethod
     def from_string(cls, string):
@@ -138,7 +137,7 @@ class EAXMLDeserializer(XMLDeserializer):
             raise InvalidXMLError(TAGS_ERRORS[tag])
         return node
 
-    def _get_node_by_tag(self, root: ET.Element, tag: str) -> ET.Element:
+    def _get_node_by_tag(self, root: ET.Element, tag: str) -> Optional[ET.Element]:
         return root.find(EA_TAGS[tag])
 
     def _parse_elem(self, elem: ET.Element) -> Optional[UMLObject]:
@@ -146,7 +145,6 @@ class EAXMLDeserializer(XMLDeserializer):
             return None
 
         if elem_id := elem.attrib.get(EA_ATTR["elem_id"]):
-
             if parsed_elem := self._try_build_class_or_iface(elem):
                 parsed_elem.id = elem_id
                 self._id_to_instance_mapping[elem_id] = parsed_elem
@@ -157,8 +155,9 @@ class EAXMLDeserializer(XMLDeserializer):
 
             else:
                 logging.log(
-                    f"Retrieved object is unknown - couldn't build class or interface "
-                    f"or their relationship based on the object data."
+                    logging.INFO,
+                    """Retrieved object is unknown - couldn't build class or
+                    interface or their relationship based on the object data.""",
                 )
                 return None
 
@@ -231,7 +230,6 @@ class EAXMLDeserializer(XMLDeserializer):
     def _try_build_class_or_iface(
         self, elem: ET.Element
     ) -> Optional[ClassDiagramElement]:
-
         if ElemClass := CLASS_IFACE_MAPPING.get(elem.attrib[EA_ATTR["elem_type"]]):
             curr_elem = ElemClass(elem.attrib[EA_ATTR["elem_name"]])
 
@@ -298,6 +296,8 @@ class EAXMLDeserializer(XMLDeserializer):
     ) -> ClassRelationship.RelationshipSide:
         source_side = ClassRelationship.RelationshipSide()
 
+        low = "inf"
+        high = "inf"
         for src_vals in end.findall(EA_TAGS["end_low"]):
             src_low = src_vals.attrib[EA_ATTR["end_low_type"]]
             # TODO: use configuration / constants file with types mappings
@@ -325,6 +325,8 @@ class EAXMLDeserializer(XMLDeserializer):
     ) -> ClassRelationship.RelationshipSide:
         target_side = ClassRelationship.RelationshipSide()
 
+        low = "inf"
+        high = "inf"
         for src_vals in end.findall(EA_TAGS["end_low"]):
             dst_low = src_vals.attrib[EA_ATTR["end_low_type"]]
             if dst_low == "uml:LiteralUnlimitedNatural":
