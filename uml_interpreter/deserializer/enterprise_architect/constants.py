@@ -18,6 +18,7 @@ from uml_interpreter.model.diagrams.class_diagram import (
     ClassDiagramClass,
     ClassDiagramElement,
     ClassDiagramInterface,
+    RelationshipType,
 )
 
 
@@ -139,8 +140,8 @@ CLASS_RELATIONSHIPS_TYPES: list[str] = ["uml:Association"]
 UML Class Relationships types
 """
 
-CLASS_REL_MAPPING_TYPE: dict[str, str] = {
-    "uml:Association": "Association",
+CLASS_REL_MAPPING_TYPE: dict[str, RelationshipType] = {
+    "uml:Association": RelationshipType.Association,
 }
 """
 Mapping of relationship elements to their type name

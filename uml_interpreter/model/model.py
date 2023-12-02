@@ -4,6 +4,7 @@ from uml_interpreter.visitor.model_visitor import ModelPrinter, ModelVisitor
 from uml_interpreter.model.diagrams.abstract import UMLDiagram
 from uml_interpreter.model.abstract import UMLObject
 
+
 class UMLModel(UMLObject):
     def __init__(self, diagrams=None, filename=None) -> None:
         self.diagrams: list[UMLDiagram] = diagrams or []

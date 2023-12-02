@@ -1,5 +1,6 @@
 from typing import Any, Optional
 from dataclasses import dataclass
+from enum import Enum, auto
 
 import uml_interpreter.model.diagrams.abstract as dg
 import uml_interpreter.model.diagrams.sequence_diagram as sd
@@ -14,6 +15,11 @@ class ClassDiagram(dg.StructuralDiagram):
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_diagram(self)
+
+
+class RelationshipType(Enum):
+    Association = auto()
+    Generalization = auto()
 
 
 class ClassDiagramElement(sd.SequenceActor):
@@ -58,18 +64,17 @@ class ClassRelationship(UMLObject):
         element: Optional[ClassDiagramElement] = None
         role: Optional[str] = None
         """
-        Property name at the end
-        # TODO: discuss
+        Name of the property storing relationship on one side.
         """
         min_max_multiplicity: tuple[str, str] = ("0", "inf")
-        # TODO: change to dataclass with values from enum created from config with mapping of name to python type (change name to multiplicity_range)
+        # TODO: change type to dataclass with values from enum with possible values
+        # TODO: (would be created from config with mapping of name to python type (change name to multiplicity_range)
         # TODO: discuss default value
 
     def __init__(
         self,
-        type: str = 'Association',
+        type: RelationshipType = RelationshipType.Association,
         name: Optional[str] = None,
-        # TODO: take type = Association from enum
         source: Optional[ClassDiagramElement] = None,
         target: Optional[ClassDiagramElement] = None,
         source_minmax: tuple[str, str] = ("0", "inf"),
@@ -79,12 +84,12 @@ class ClassRelationship(UMLObject):
         *,
         source_side: RelationshipSide = None,
         target_side: RelationshipSide = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Class representing UML Class Diagram Relationship between elements.
         If source_side or target_side are specified, they are treated with
-        a higher priority than positional argumets.
+        a higher priority than positional arguments.
         """
         self._source_side = source_side or ClassRelationship.RelationshipSide(
             source, source_role, source_minmax
@@ -94,7 +99,6 @@ class ClassRelationship(UMLObject):
         )
 
         self.type = type
-        # TODO: make enum from config
         self.name = name
         super().__init__(**kwargs)
 
@@ -124,13 +128,13 @@ class ClassRelationship(UMLObject):
             return
 
         if isinstance(new_source_element, ClassDiagramElement):
-            # TODO: should it erase previous multiplicity and role?
             self._source_side.element = new_source_element
             new_source_element.add_relationship_to(self)
 
         else:
-            """
-            TODO: raise custom exception"""
+            raise InvalidModelInitialization(
+                f"Given class diagram element was not an instance of defined class. New element: {str(new_target_element)}"
+            )
 
     def create_source_side(
         self,
@@ -169,13 +173,13 @@ class ClassRelationship(UMLObject):
             return
 
         if isinstance(new_target_element, ClassDiagramElement):
-            # TODO: should it erase previous multiplicity and role?
             self._target_side.element = new_target_element
             new_target_element.add_relationship_from(self)
 
         else:
-            """
-            TODO: raise custom exception"""
+            raise InvalidModelInitialization(
+                f"Given class diagram element was not an instance of defined class. New element: {str(new_target_element)}"
+            )
 
     def create_target_side(
         self,
@@ -198,7 +202,6 @@ class ClassDiagramMethod(UMLObject):
         self.parameters: list[ClassDiagramAttribute] = parameters or []
         self.ret_type = ret_type
         super().__init__(**kwargs)
-
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_diagram_method(self)

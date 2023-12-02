@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from typing import Any
 
-from uml_interpreter.model.diagrams.class_diagram import ClassDiagramElement, ClassRelationship
+from uml_interpreter.model.diagrams.class_diagram import (
+    ClassDiagramElement,
+    ClassRelationship,
+)
 from abc import ABC, abstractmethod
 
 
@@ -25,8 +28,8 @@ class SetRelationshipSource(RelationshipEditor):
         self._relationship.source = source
         return self._relationship
 
-@dataclass
 
+@dataclass
 class SourceDestinationPair:
     source: Any = None
     target: Any = None

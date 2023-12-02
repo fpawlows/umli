@@ -13,4 +13,3 @@ class UMLObject(ABC):
     @id.setter
     def id(self, new_id: str) -> None:
         self._id = new_id
-

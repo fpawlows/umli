@@ -36,6 +36,7 @@ from uml_interpreter.model.diagrams.class_diagram import (
     ClassDiagramMethod,
     ClassDiagramMethodParameter,
     ClassRelationship,
+    RelationshipType,
 )
 from uml_interpreter.source.source import FileSource, StringSource, XMLSource
 
@@ -49,7 +50,6 @@ class EAXMLDeserializer(XMLDeserializer):
 
     def __init__(self, source: XMLSource) -> None:
         self._source: XMLSource = source
-        # TODO: check
         self._id_to_instance_mapping: dict[str, UMLObject] = dict()
         self._id_to_evaluation_queue: dict[str, deque[Callable]] = defaultdict(deque)
         """
@@ -150,14 +150,16 @@ class EAXMLDeserializer(XMLDeserializer):
             if parsed_elem := self._try_build_class_or_iface(elem):
                 parsed_elem.id = elem_id
                 self._id_to_instance_mapping[elem_id] = parsed_elem
-                # TODO: rethink return value
 
             elif parsed_elem := self._try_build_relationship(elem):
                 parsed_elem.id = elem_id
                 self._id_to_instance_mapping[elem_id] = parsed_elem
 
             else:
-                #     TODO: log that object is unknown and unsupported
+                logging.log(
+                    f"Retrieved object is unknown - couldn't build class or interface "
+                    f"or their relationship based on the object data."
+                )
                 return None
 
             return parsed_elem
@@ -209,13 +211,11 @@ class EAXMLDeserializer(XMLDeserializer):
             return UMLDiagram(diag_name)
 
         elem_ids: list[str] = [
-            diag_elem.attrib[EA_ATTR["diag_elem_id"]] 
+            diag_elem.attrib[EA_ATTR["diag_elem_id"]]
             for diag_elem in diag_elems.iter(EA_TAGS["diag_elem"])
         ]
 
-        uml_elems: list[UMLObject] = [
-            elem for elem in elems if elem.id in elem_ids
-        ]
+        uml_elems: list[UMLObject] = [elem for elem in elems if elem.id in elem_ids]
 
         if all(isinstance(elem, ClassDiagramElement) for elem in uml_elems):
             return ClassDiagram(diag_name, uml_elems)
@@ -293,12 +293,14 @@ class EAXMLDeserializer(XMLDeserializer):
             meths.append(ClassDiagramMethod(name, ret_type, params))
         return meths
 
-    def _create_relation_source_side(self, end: ET.Element) -> ClassRelationship.RelationshipSide:
+    def _create_relation_source_side(
+        self, end: ET.Element
+    ) -> ClassRelationship.RelationshipSide:
         source_side = ClassRelationship.RelationshipSide()
 
         for src_vals in end.findall(EA_TAGS["end_low"]):
             src_low = src_vals.attrib[EA_ATTR["end_low_type"]]
-            # TODO: use configuration / constants file with types mappigns
+            # TODO: use configuration / constants file with types mappings
             if src_low == "uml:LiteralUnlimitedNatural":
                 low = "inf"
             else:
@@ -318,7 +320,9 @@ class EAXMLDeserializer(XMLDeserializer):
 
         return source_side
 
-    def _create_relation_target_side(self, end: ET.Element) -> ClassRelationship.RelationshipSide:
+    def _create_relation_target_side(
+        self, end: ET.Element
+    ) -> ClassRelationship.RelationshipSide:
         target_side = ClassRelationship.RelationshipSide()
 
         for src_vals in end.findall(EA_TAGS["end_low"]):
@@ -342,17 +346,13 @@ class EAXMLDeserializer(XMLDeserializer):
 
         return target_side
 
-
     def _try_build_relationship(self, elem: ET.Element) -> Optional[ClassRelationship]:
         if elem.attrib[EA_ATTR["elem_type"]] in CLASS_RELATIONSHIPS_TYPES:
             rel_name = elem.attrib.get(EA_ATTR["end_name"])
             type_name = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTR["elem_type"]]]
 
             # Final relationship uninitialized placeholder
-            processed_relation = ClassRelationship(
-                type_name,
-                rel_name
-            )
+            processed_relation = ClassRelationship(type_name, rel_name)
             ends_ids = SourceDestinationPair()
 
             for end in elem.iter(EA_TAGS["end"]):
@@ -360,14 +360,18 @@ class EAXMLDeserializer(XMLDeserializer):
                     ends_ids.source = self._get_mandatory_node(end, "end_type").attrib[
                         EA_ATTR["end_type_src"]
                     ]
-                    processed_relation.source_side = self._create_relation_source_side(end)
+                    processed_relation.source_side = self._create_relation_source_side(
+                        end
+                    )
 
                 elif end.attrib[EA_ATTR["end_id"]].startswith("EAID_dst"):
                     ends_ids.target = self._get_mandatory_node(end, "end_type").attrib[
                         EA_ATTR["end_type_dst"]
                     ]
-                    processed_relation.target_side = self._create_relation_target_side(end)
-        
+                    processed_relation.target_side = self._create_relation_target_side(
+                        end
+                    )
+
             if not (all(vars(ends_ids).values())):
                 raise InvalidXMLError(ERROR_MESS[ErrorType.REL_ENDS])
 
