@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Union
@@ -65,7 +66,6 @@ class ClassDiagramElement(sd.SequenceActor):
         relationship = ClassRelationship(
             source=self, target=target_element, type=relation_type, **rel_init_kwargs
         )
-        relationship = self._add_to_relations_to(relationship)
         return relationship
 
     def _add_to_relations_to(
@@ -115,9 +115,8 @@ class ClassDiagramElement(sd.SequenceActor):
             relation_type = RelationshipType(relation_type)
 
         relationship = ClassRelationship(
-            source=self, source=source_element, type=relation_type, **rel_init_kwargs
+            source=source_element, target=self, type=relation_type, **rel_init_kwargs
         )
-        relationship = self._add_to_relations_from(relationship)
         return relationship
 
     def _add_to_relations_from(
@@ -131,7 +130,7 @@ class ClassDiagramElement(sd.SequenceActor):
         the current element, but target side is left as given.
         """
         self.relations_from.append(relationship)
-        relationship.source = self
+        relationship.target = self
         return relationship
 
     def set_as_target_of(self, relationship: ClassRelationship) -> ClassRelationship:
@@ -221,7 +220,7 @@ class ClassRelationship(UMLObject):
             """
             In case given side is a placeholder - not yet initialized.
             """
-            side.element.add_relationship_to(relationship=self)
+            side.element.set_as_source_of(self)
 
     @source.setter
     def source(self, new_source_element: ClassDiagramElement) -> None:
@@ -233,7 +232,7 @@ class ClassRelationship(UMLObject):
 
         if isinstance(new_source_element, ClassDiagramElement):
             self._source_side.element = new_source_element
-            new_source_element.add_relationship_to(relationship=self)
+            new_source_element.set_as_source_of(self)
 
         else:
             raise InvalidModelInitialization(
@@ -266,7 +265,7 @@ class ClassRelationship(UMLObject):
             """
             In case given side is a placeholder - not yet initialized.
             """
-            side.element.add_relationship_from(relationship=self)
+            side.element.set_as_target_of(self)
 
     @target.setter
     def target(self, new_target_element: ClassDiagramElement) -> None:
@@ -278,7 +277,7 @@ class ClassRelationship(UMLObject):
 
         if isinstance(new_target_element, ClassDiagramElement):
             self._target_side.element = new_target_element
-            new_target_element.add_relationship_from(relationship=self)
+            new_target_element.set_as_target_of(self)
 
         else:
             raise InvalidModelInitialization(
@@ -295,15 +294,6 @@ class ClassRelationship(UMLObject):
             target_element, role, min_max_multiplicity
         )
         self.target_side = new_target_side
-
-    def __key(self) -> tuple:
-        """
-        Function returning tuple of attributes used for unique identification of a relationship.
-        """
-        return (self.name, self._source_side, self._target_side, self.type)
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, ClassRelationship) and self.__key() == other.__key()
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_relationship(self)
