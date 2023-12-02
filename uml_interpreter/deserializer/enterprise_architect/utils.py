@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Any
-
 from uml_interpreter.model.diagrams.class_diagram import (
     ClassDiagramElement,
     ClassRelationship,
