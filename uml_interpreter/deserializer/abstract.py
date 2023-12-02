@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
 from uml_interpreter.deserializer.errors import InvalidXMLError
-from uml_interpreter.model.base_classes import UMLModel
+from uml_interpreter.model.model import UMLModel
 from uml_interpreter.source.source import XMLSource
 
 

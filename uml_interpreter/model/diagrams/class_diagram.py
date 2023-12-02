@@ -1,12 +1,13 @@
 from typing import Any, Optional
 from dataclasses import dataclass
 
-import uml_interpreter.model.base_classes as bc
-import uml_interpreter.model.sequence_diagram as sd
+import uml_interpreter.model.diagrams.abstract as dg
+import uml_interpreter.model.diagrams.sequence_diagram as sd
 import uml_interpreter.visitor.model_visitor as v
+from uml_interpreter.model.abstract import UMLObject
 
 
-class ClassDiagram(bc.StructuralDiagram):
+class ClassDiagram(dg.StructuralDiagram):
     def __init__(self, name: Optional[str] = None, elements=None) -> None:
         super().__init__(name)
         self.elements: list[ClassDiagramElement] = elements or []
@@ -51,47 +52,51 @@ class ClassDiagramInterface(ClassDiagramElement):
         visitor.visit_class_diagram_interface(self)
 
 
-class ClassRelationship:
+class ClassRelationship(UMLObject):
     @dataclass
     class RelationshipSide:
-        element: ClassDiagramElement
-        role: Optional[str] = ""
-        # TODO: change na default None else remove Optional
-        # TODO: enum
-
-        min_max_multiplicity: tuple[str, str] = ("0", "*")
-        # TODO: change to dataclass with values from enum (change name to multiplicity)
-        # TODO: ask why empty strings - not Nones + separate class?
+        element: Optional[ClassDiagramElement] = None
+        role: Optional[str] = None
+        """
+        Property name at the end
+        # TODO: discuss
+        """
+        min_max_multiplicity: tuple[str, str] = ("0", "inf")
+        # TODO: change to dataclass with values from enum created from config with mapping of name to python type (change name to multiplicity_range)
         # TODO: discuss default value
-
-        # TODO: discuss if we need setters
-        # self.source_role = source_role or ""
-        # self.source_minmax = source_minmax
-        # self.target_role = target_role or ""
-        # self.target_minmax = target_minmax
 
     def __init__(
         self,
-        type: str,
-        name: str,
-        # TODO: discuss below default values -> to None if Optional
-        source_role: Optional[str] = "",
-        target_role: Optional[str] = "",
-        source_minmax: tuple[str, str] = ("", ""),
-        target_minmax: tuple[str, str] = ("", ""),
+        type: str = 'Association',
+        name: Optional[str] = None,
+        # TODO: take type = Association from enum
         source: Optional[ClassDiagramElement] = None,
         target: Optional[ClassDiagramElement] = None,
+        source_minmax: tuple[str, str] = ("0", "inf"),
+        target_minmax: tuple[str, str] = ("0", "inf"),
+        source_role: Optional[str] = None,
+        target_role: Optional[str] = None,
+        *,
+        source_side: RelationshipSide = None,
+        target_side: RelationshipSide = None,
+        **kwargs
     ) -> None:
-        self._source_side = ClassRelationship.RelationshipSide(
+        """
+        Class representing UML Class Diagram Relationship between elements.
+        If source_side or target_side are specified, they are treated with
+        a higher priority than positional argumets.
+        """
+        self._source_side = source_side or ClassRelationship.RelationshipSide(
             source, source_role, source_minmax
         )
-        self._target_side = ClassRelationship.RelationshipSide(
+        self._target_side = target_side or ClassRelationship.RelationshipSide(
             target, target_role, target_minmax
         )
 
         self.type = type
-        # TODO: make enum
+        # TODO: make enum from config
         self.name = name
+        super().__init__(**kwargs)
 
     @property
     def source_side(self) -> RelationshipSide:
@@ -104,14 +109,18 @@ class ClassRelationship:
     @source_side.setter
     def source_side(self, side: RelationshipSide) -> None:
         self._source_side = side
-        side.element.add_relationship_to(self)
+        if side.element is not None:
+            """
+            In case given side is a placeholder - not yet initialized.
+            """
+            side.element.add_relationship_to(self)
 
     @source.setter
     def source(self, new_source_element: ClassDiagramElement) -> None:
         if self.source is new_source_element:
             """
             Condition to avoid ciclic setters calls.
-            TODO: is there some pattern for such case"""
+            """
             return
 
         if isinstance(new_source_element, ClassDiagramElement):
@@ -145,14 +154,18 @@ class ClassRelationship:
     @target_side.setter
     def target_side(self, side: RelationshipSide) -> None:
         self._target_side = side
-        side.element.add_relationship_from(self)
+        if side.element is not None:
+            """
+            In case given side is a placeholder - not yet initialized.
+            """
+            side.element.add_relationship_from(self)
 
     @target.setter
     def target(self, new_target_element: ClassDiagramElement) -> None:
         if self.target is new_target_element:
             """
             Condition to avoid ciclic setters calls.
-            TODO: is there some pattern for such case"""
+            """
             return
 
         if isinstance(new_target_element, ClassDiagramElement):
@@ -179,33 +192,37 @@ class ClassRelationship:
         visitor.visit_class_relationship(self)
 
 
-class ClassDiagramMethod:
-    def __init__(self, name: str, ret_type: str, parameters=None) -> None:
+class ClassDiagramMethod(UMLObject):
+    def __init__(self, name: str, ret_type: str, parameters=None, **kwargs) -> None:
         self.name = name
         self.parameters: list[ClassDiagramAttribute] = parameters or []
         self.ret_type = ret_type
+        super().__init__(**kwargs)
+
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_diagram_method(self)
 
 
-class ClassDiagramAttribute:
-    def __init__(self, name: str, type: str, init_value: Any = None) -> None:
+class ClassDiagramAttribute(UMLObject):
+    def __init__(self, name: str, type: str, init_value: Any = None, **kwargs) -> None:
         self.name = name
         self.type = type
         self.init_value = init_value
+        super().__init__(**kwargs)
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_diagram_attribute(self)
 
 
-class ClassDiagramMethodParameter:
+class ClassDiagramMethodParameter(UMLObject):
     def __init__(
-        self, name: Optional[str], type: str, default_value: Any = None
+        self, name: Optional[str], type: str, default_value: Any = None, **kwargs
     ) -> None:
         self.name = name or ""
         self.type = type
         self.default_value = default_value
+        super().__init__(**kwargs)
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_diagram_method_parameter(self)

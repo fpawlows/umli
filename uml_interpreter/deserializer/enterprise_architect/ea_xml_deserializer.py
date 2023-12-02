@@ -1,6 +1,7 @@
 from typing import Any, Optional, Callable, Iterable
 from functools import wraps
 from collections import defaultdict, deque
+import logging
 
 import xml.etree.ElementTree as ET
 
@@ -14,12 +15,7 @@ from uml_interpreter.deserializer.enterprise_architect.constants import (
 )
 from uml_interpreter.deserializer.abstract import XMLDeserializer
 from uml_interpreter.deserializer.enterprise_architect.utils import (
-    ElemWithId,
-    EndMinMax,
-    RelEndRoles,
-    RelEndsMinMax,
-    RelIds,
-    RelWithIds,
+    SourceDestinationPair,
     SetRelationshipSource,
     SetRelationshipTarget,
 )
@@ -30,8 +26,10 @@ from uml_interpreter.deserializer.errors import (
     InvalidXMLError,
     IdMismatchException,
 )
-from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
-from uml_interpreter.model.class_diagram import (
+from uml_interpreter.model.diagrams.abstract import UMLDiagram
+from uml_interpreter.model.abstract import UMLObject
+from uml_interpreter.model.model import UMLModel
+from uml_interpreter.model.diagrams.class_diagram import (
     ClassDiagram,
     ClassDiagramAttribute,
     ClassDiagramElement,
@@ -43,7 +41,7 @@ from uml_interpreter.source.source import FileSource, StringSource, XMLSource
 
 
 class EAXMLDeserializer(XMLDeserializer):
-    UNSUPPORTED_XML_ELEMENTS = ["uml:Package"]
+    IGNORED_XML_ELEMENTS = ["uml:Package"]
     """
     Classes ignored during parsing.
     """
@@ -51,11 +49,9 @@ class EAXMLDeserializer(XMLDeserializer):
 
     def __init__(self, source: XMLSource) -> None:
         self._source: XMLSource = source
-        self._temp_rel_ids: list[RelWithIds] = []
-        self._id_to_instance_mapping: dict[str, ET.Element] = dict()
-        # TODO: consider using proxy or lazy evaluation for this
-
-        self._id_to_evaluation_queue: dict[str, Iterable[Callable]] = defaultdict(deque)
+        # TODO: check
+        self._id_to_instance_mapping: dict[str, UMLObject] = dict()
+        self._id_to_evaluation_queue: dict[str, deque[Callable]] = defaultdict(deque)
         """
         Queue of functions to be called when Instance of the Object with given ID is available.
         The Instance has to be given as an argument to function call.
@@ -116,10 +112,10 @@ class EAXMLDeserializer(XMLDeserializer):
 
         model_node = self._get_mandatory_node(root, "model")
 
-        elems: list[ElemWithId] = self._parse_elems(model_node)
+        elems: list[UMLObject] = self._parse_elems(model_node)
 
         diagrams: list[UMLDiagram] = self._parse_diagrams(
-            root, [elem for elem in elems if isinstance(elem.elem, ClassDiagramElement)]
+            root, [elem for elem in elems if isinstance(elem, ClassDiagramElement)]
         )
 
         return UMLModel(
@@ -145,26 +141,32 @@ class EAXMLDeserializer(XMLDeserializer):
     def _get_node_by_tag(self, root: ET.Element, tag: str) -> ET.Element:
         return root.find(EA_TAGS[tag])
 
-    def _parse_elem(self, elem: ET.Element) -> Optional[ElemWithId]:
+    def _parse_elem(self, elem: ET.Element) -> Optional[UMLObject]:
         if not self._is_supported_element(elem):
             return None
 
         if elem_id := elem.attrib.get(EA_ATTR["elem_id"]):
 
             if parsed_elem := self._try_build_class_or_iface(elem):
+                parsed_elem.id = elem_id
                 self._id_to_instance_mapping[elem_id] = parsed_elem
                 # TODO: rethink return value
 
             elif parsed_elem := self._try_build_relationship(elem):
+                parsed_elem.id = elem_id
                 self._id_to_instance_mapping[elem_id] = parsed_elem
 
             else:
-                raise InvalidXMLError(ERROR_MESS[ErrorType.MODEL_ID_MISSING])
+                #     TODO: log that object is unknown and unsupported
+                return None
 
-            return ElemWithId(parsed_elem, elem_id)
+            return parsed_elem
+
+        else:
+            raise InvalidXMLError(ERROR_MESS[ErrorType.MODEL_ID_MISSING])
 
     @evaluate_elements_afterwards()
-    def _parse_elems(self, model_node: ET.Element) -> list[ElemWithId]:
+    def _parse_elems(self, model_node: ET.Element) -> list[UMLObject]:
         """
         Functions dependent on the initialization of the element with id given as the key of the dictionary.
         """
@@ -178,7 +180,7 @@ class EAXMLDeserializer(XMLDeserializer):
     def _parse_diagrams(
         self,
         root: ET.Element,
-        elems: list[ElemWithId],
+        elems: list[UMLObject],
     ) -> list[UMLDiagram]:
         diagrams: list[UMLDiagram] = []
 
@@ -191,14 +193,14 @@ class EAXMLDeserializer(XMLDeserializer):
 
     def _populate_diagrams(
         self,
-        elems: list[ElemWithId],
+        elems: list[UMLObject],
         diagrams: list[UMLDiagram],
         diags: ET.Element,
     ) -> None:
         for diag in diags.iter(EA_TAGS["diag"]):
             diagrams.append(self._get_filled_diag(diag, elems))
 
-    def _get_filled_diag(self, diag: ET.Element, elems: list[ElemWithId]) -> UMLDiagram:
+    def _get_filled_diag(self, diag: ET.Element, elems: list[UMLObject]) -> UMLDiagram:
         diag_name = self._get_mandatory_node(diag, "diag_propty").attrib.get(
             EA_ATTR["diag_propty_name"]
         )
@@ -206,12 +208,13 @@ class EAXMLDeserializer(XMLDeserializer):
         if not (diag_elems := diag.find(EA_TAGS["diag_elems"])):
             return UMLDiagram(diag_name)
 
-        elem_ids: list[str] = []
-        for diag_elem in diag_elems.iter(EA_TAGS["diag_elem"]):
-            elem_ids.append(diag_elem.attrib[EA_ATTR["diag_elem_id"]])
+        elem_ids: list[str] = [
+            diag_elem.attrib[EA_ATTR["diag_elem_id"]] 
+            for diag_elem in diag_elems.iter(EA_TAGS["diag_elem"])
+        ]
 
-        uml_elems: list[ClassDiagramElement | Any] = [
-            elem.elem for elem in elems if elem.id in elem_ids
+        uml_elems: list[UMLObject] = [
+            elem for elem in elems if elem.id in elem_ids
         ]
 
         if all(isinstance(elem, ClassDiagramElement) for elem in uml_elems):
@@ -221,7 +224,7 @@ class EAXMLDeserializer(XMLDeserializer):
 
     def _is_supported_element(self, elem: ET.Element) -> bool:
         is_supported_element = (
-            elem.attrib[EA_ATTR["elem_type"]] not in self.UNSUPPORTED_XML_ELEMENTS
+            elem.attrib[EA_ATTR["elem_type"]] not in self.IGNORED_XML_ELEMENTS
         )
         return is_supported_element
 
@@ -246,14 +249,14 @@ class EAXMLDeserializer(XMLDeserializer):
         for attr in elem.iter(EA_TAGS["elem_attr"]):
             name: str = attr.attrib[EA_ATTR["elem_attr_name"]]
             if not (
-                type := EA_ATTR_MAPPING.get(
+                type_name := EA_ATTR_MAPPING.get(
                     self._get_mandatory_node(attr, "elem_attr_type").attrib[
                         EA_ATTR["elem_attr_type"]
                     ]
                 )
             ):
-                type = ""
-            attrs.append(ClassDiagramAttribute(name, type))
+                type_name = ""
+            attrs.append(ClassDiagramAttribute(name, type_name))
         return attrs
 
     def _build_methods(self, elem: ET.Element) -> list[ClassDiagramMethod]:
@@ -277,106 +280,103 @@ class EAXMLDeserializer(XMLDeserializer):
 
                 else:
                     if not (
-                        type := EA_ATTR_MAPPING.get(
+                        type_name := EA_ATTR_MAPPING.get(
                             self._get_mandatory_node(
                                 param, "elem_meth_param_type"
                             ).attrib[EA_ATTR["elem_meth_param_type"]]
                         )
                     ):
-                        type = ""
+                        type_name = ""
 
-                    params.append(ClassDiagramMethodParameter(param_name, type))
+                    params.append(ClassDiagramMethodParameter(param_name, type_name))
 
             meths.append(ClassDiagramMethod(name, ret_type, params))
         return meths
 
-    def _try_build_relationship(self, elem: ET.Element) -> Optional[ClassRelationship]:
-        if not (rel_name := elem.attrib.get(EA_ATTR["end_name"])):
-            # TODO: why "end_name"
-            # TODO: change na None
-            rel_name = ""
+    def _create_relation_source_side(self, end: ET.Element) -> ClassRelationship.RelationshipSide:
+        source_side = ClassRelationship.RelationshipSide()
 
+        for src_vals in end.findall(EA_TAGS["end_low"]):
+            src_low = src_vals.attrib[EA_ATTR["end_low_type"]]
+            # TODO: use configuration / constants file with types mappigns
+            if src_low == "uml:LiteralUnlimitedNatural":
+                low = "inf"
+            else:
+                low = src_vals.attrib[EA_ATTR["end_low_val"]]
+
+        for src_vals in end.findall(EA_TAGS["end_high"]):
+            src_high = src_vals.attrib[EA_ATTR["end_high_type"]]
+            if src_high == "uml:LiteralUnlimitedNatural":
+                high = "inf"
+            else:
+                high = src_vals.attrib[EA_ATTR["end_high_val"]]
+
+        source_side.min_max_multiplicity = (low, high)
+
+        if role := end.attrib.get(EA_ATTR["end_name_src"]):
+            source_side.role = role
+
+        return source_side
+
+    def _create_relation_target_side(self, end: ET.Element) -> ClassRelationship.RelationshipSide:
+        target_side = ClassRelationship.RelationshipSide()
+
+        for src_vals in end.findall(EA_TAGS["end_low"]):
+            dst_low = src_vals.attrib[EA_ATTR["end_low_type"]]
+            if dst_low == "uml:LiteralUnlimitedNatural":
+                low = "inf"
+            else:
+                low = src_vals.attrib[EA_ATTR["end_low_val"]]
+
+        for src_vals in end.findall(EA_TAGS["end_high"]):
+            dst_high = src_vals.attrib[EA_ATTR["end_high_type"]]
+            if dst_high == "uml:LiteralUnlimitedNatural":
+                high = "inf"
+            else:
+                high = src_vals.attrib[EA_ATTR["end_high_val"]]
+
+        target_side.min_max_multiplicity = (low, high)
+
+        if role := end.attrib.get(EA_ATTR["end_name_dst"]):
+            target_side.role = role
+
+        return target_side
+
+
+    def _try_build_relationship(self, elem: ET.Element) -> Optional[ClassRelationship]:
         if elem.attrib[EA_ATTR["elem_type"]] in CLASS_RELATIONSHIPS_TYPES:
-            end_ids: RelIds = RelIds("", "")
-            end_roles: RelEndRoles = RelEndRoles("", "")
-            end_minmax: RelEndsMinMax = RelEndsMinMax(
-                EndMinMax("", ""), EndMinMax("", "")
+            rel_name = elem.attrib.get(EA_ATTR["end_name"])
+            type_name = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTR["elem_type"]]]
+
+            # Final relationship uninitialized placeholder
+            processed_relation = ClassRelationship(
+                type_name,
+                rel_name
             )
+            ends_ids = SourceDestinationPair()
 
             for end in elem.iter(EA_TAGS["end"]):
-                low = ""
-                high = ""
-                # TODO: can it be starts_with()?
-                if "EAID_src" in end.attrib[EA_ATTR["end_id"]]:
-                    end_ids.src_id = self._get_mandatory_node(end, "end_type").attrib[
+                if end.attrib[EA_ATTR["end_id"]].startswith("EAID_src"):
+                    ends_ids.source = self._get_mandatory_node(end, "end_type").attrib[
                         EA_ATTR["end_type_src"]
                     ]
+                    processed_relation.source_side = self._create_relation_source_side(end)
 
-                    for src_vals in end.findall(EA_TAGS["end_low"]):
-                        src_low = src_vals.attrib[EA_ATTR["end_low_type"]]
-                        if src_low == "uml:LiteralUnlimitedNatural":
-                            low = "inf"
-                        else:
-                            low = src_vals.attrib[EA_ATTR["end_low_val"]]
-
-                    for src_vals in end.findall(EA_TAGS["end_high"]):
-                        src_high = src_vals.attrib[EA_ATTR["end_high_type"]]
-                        if src_high == "uml:LiteralUnlimitedNatural":
-                            high = "inf"
-                        else:
-                            high = src_vals.attrib[EA_ATTR["end_high_val"]]
-
-                    end_minmax.src_minmax = EndMinMax(low, high)
-
-                    if role := end.attrib.get(EA_ATTR["end_name_src"]):
-                        end_roles.src_role = role
-
-                elif "EAID_dst" in end.attrib[EA_ATTR["end_id"]]:
-                    end_ids.dst_id = self._get_mandatory_node(end, "end_type").attrib[
+                elif end.attrib[EA_ATTR["end_id"]].startswith("EAID_dst"):
+                    ends_ids.target = self._get_mandatory_node(end, "end_type").attrib[
                         EA_ATTR["end_type_dst"]
                     ]
-
-                    for src_vals in end.findall(EA_TAGS["end_low"]):
-                        dst_low = src_vals.attrib[EA_ATTR["end_low_type"]]
-                        if dst_low == "uml:LiteralUnlimitedNatural":
-                            low = "inf"
-                        else:
-                            low = src_vals.attrib[EA_ATTR["end_low_val"]]
-
-                    for src_vals in end.findall(EA_TAGS["end_high"]):
-                        dst_high = src_vals.attrib[EA_ATTR["end_high_type"]]
-                        if dst_high == "uml:LiteralUnlimitedNatural":
-                            high = "inf"
-                        else:
-                            high = src_vals.attrib[EA_ATTR["end_high_val"]]
-
-                    end_minmax.dst_minmax = EndMinMax(low, high)
-
-                    if role := end.attrib.get(EA_ATTR["end_name_dst"]):
-                        end_roles.dst_role = role
-
-            if not (
-                all(isinstance(end, str) for end in vars(end_ids).values())
-                and all(end != "" for end in vars(end_ids).values())
-            ):
+                    processed_relation.target_side = self._create_relation_target_side(end)
+        
+            if not (all(vars(ends_ids).values())):
                 raise InvalidXMLError(ERROR_MESS[ErrorType.REL_ENDS])
 
-            type = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTR["elem_type"]]]
-            curr_elem = ClassRelationship(
-                type,
-                rel_name,
-                end_roles.src_role,
-                end_roles.dst_role,
-                end_minmax.src_minmax,
-                end_minmax.dst_minmax,
+            self._id_to_evaluation_queue[ends_ids.source].append(
+                SetRelationshipSource(processed_relation)
+            )
+            self._id_to_evaluation_queue[ends_ids.target].append(
+                SetRelationshipTarget(processed_relation)
             )
 
-            self._id_to_evaluation_queue[end_ids.src_id].append(
-                SetRelationshipSource(curr_elem)
-            )
-            self._id_to_evaluation_queue[end_ids.dst_id].append(
-                SetRelationshipTarget(curr_elem)
-            )
-            # self._temp_rel_ids.append(RelWithIds(curr_elem, end_ids))
-            return curr_elem
+            return processed_relation
         return None

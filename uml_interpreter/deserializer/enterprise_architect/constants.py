@@ -14,7 +14,7 @@ The module includes the following:
 - ErrorType
 """
 
-from uml_interpreter.model.class_diagram import (
+from uml_interpreter.model.diagrams.class_diagram import (
     ClassDiagramClass,
     ClassDiagramElement,
     ClassDiagramInterface,

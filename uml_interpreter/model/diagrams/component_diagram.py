@@ -1,7 +1,8 @@
 from typing import Optional
 
-import uml_interpreter.model.base_classes as bc
+import uml_interpreter.model.abstract as bc
 import uml_interpreter.model.class_diagram as cd
+from uml_interpreter.model.abstract import UMLObject
 
 
 class ComponentDiagram(bc.StructuralDiagram):
@@ -10,21 +11,23 @@ class ComponentDiagram(bc.StructuralDiagram):
         self.components: list[Component] = []
 
 
-class ComponentRelationMember:
-    def __init__(self) -> None:
+class ComponentRelationMember(UMLObject):
+    def __init__(self, **kwargs) -> None:
         self.relations_to: list[ComponentRelationship] = []
         self.relations_from: list[ComponentRelationship] = []
+        super().__init__(**kwargs)
 
 
-class ComponentRelationship:
+class ComponentRelationship(UMLObject):
     def __init__(
-        self, source: ComponentRelationMember, target: ComponentRelationMember
+        self, source: ComponentRelationMember, target: ComponentRelationMember, **kwargs
     ) -> None:
         self.source = source
         source.relations_from.append(self)
         self.target = target
         target.relations_to.append(self)
         self.related_relationship: Optional[cd.ClassRelationship] = None
+        super().__init__(**kwargs)
 
 
 class Component(ComponentRelationMember):

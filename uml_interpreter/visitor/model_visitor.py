@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
+    from uml_interpreter.model.abstract import UMLDiagram, UMLModel
     from uml_interpreter.model.class_diagram import (
         ClassDiagram,
         ClassDiagramAttribute,
@@ -138,7 +138,7 @@ class ModelPrinter(ModelVisitor):
             self.decr_ident()
 
     def visit_class_relationship(self, rel: ClassRelationship):
-        from uml_interpreter.model.class_diagram import ClassDiagramElement
+        from uml_interpreter.model.diagrams.class_diagram import ClassDiagramElement
 
         if isinstance(rel.source, ClassDiagramElement) and isinstance(
             rel.target, ClassDiagramElement

@@ -1,11 +1,11 @@
 from enum import Enum
 from typing import Optional
 
-import uml_interpreter.model.base_classes as bc
-import uml_interpreter.model.class_diagram as cd
+import uml_interpreter.model.diagrams.abstract as dg
+import uml_interpreter.model.diagrams.class_diagram as cd
 
 
-class SequenceDiagram(bc.BehavioralDiagram):
+class SequenceDiagram(dg.BehavioralDiagram):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.actors: list[SequenceActor] = []
