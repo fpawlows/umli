@@ -1,6 +1,6 @@
-from typing import Any, Optional
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
+from typing import Any, Optional, Union
 
 import uml_interpreter.model.diagrams.abstract as dg
 import uml_interpreter.model.diagrams.sequence_diagram as sd
@@ -18,8 +18,13 @@ class ClassDiagram(dg.StructuralDiagram):
 
 
 class RelationshipType(Enum):
-    Association = auto()
-    Generalization = auto()
+    """
+    Enum representing Class Diagram relationships types.
+    Values have to be strings to allow creation by calling RelationshipType(<name>)
+    """
+
+    Association = "Association"
+    Generalization = "Generalization"
 
 
 class ClassDiagramElement(sd.SequenceActor):
@@ -33,13 +38,109 @@ class ClassDiagramElement(sd.SequenceActor):
     def accept(self, visitor: v.ModelVisitor) -> None:
         visitor.visit_class_diagram_element(self)
 
-    def add_relationship_to(self, relationship) -> None:
+    def add_relationship_to(
+        self,
+        target_element: ClassDiagramElement,
+        relation_type: Union[RelationshipType | str] = RelationshipType.Association,
+        **rel_init_kwargs,
+    ) -> ClassRelationship:
+        """
+        Adds relationship to a specified target. Accepts all key-word arguments supported by ClassRelationship
+         initialization.
+
+        :arg target_element - ClassDiagramElement instance, to which relationship should be created.
+        :arg relation_type - RelationshipType enum instance or its string value, defining type of relationship
+         to be created.
+
+        """
+        if target_element is None:
+            raise InvalidModelInitialization(
+                f"Couldn't add relationship to the class {str(self)}. "
+                f"Target or created relationship must be specified"
+            )
+
+        if isinstance(relation_type, str):
+            relation_type = RelationshipType(relation_type)
+
+        relationship = ClassRelationship(
+            source=self, target=target_element, type=relation_type, **rel_init_kwargs
+        )
+        relationship = self._add_to_relations_to(relationship)
+        return relationship
+
+    def _add_to_relations_to(
+        self, relationship: ClassRelationship
+    ) -> ClassRelationship:
+        """
+        Adds relation to self.relations_to list.
+        Logic unifying assignment of the element on relationship side is applied.
+
+        :arg relationship - predefined ClassRelationship instance. During assignment its source side is set to
+        the current element, but target side is left as given.
+        """
         self.relations_to.append(relationship)
         relationship.source = self
+        return relationship
 
-    def add_relationship_from(self, relationship) -> None:
+    def set_as_source_of(self, relationship: ClassRelationship) -> ClassRelationship:
+        """
+        Set current ClassDiagramElement as a source side of the given relationship.
+        Logic unifying assignment of the element on relationship side is applied.
+        """
+        relationship = self._add_to_relations_to(relationship)
+        return relationship
+
+    def add_relationship_from(
+        self,
+        source_element: ClassDiagramElement,
+        relation_type: Union[RelationshipType | str] = RelationshipType.Association,
+        **rel_init_kwargs,
+    ) -> ClassRelationship:
+        """
+        Adds relationship from a specified target. Accepts all key-word arguments supported by ClassRelationship
+         initialization.
+
+        :arg source_element - ClassDiagramElement instance, from which relationship should be created.
+        :arg relation_type - RelationshipType enum instance or its string value, defining type of relationship
+         to be created.
+
+        """
+        if source_element is None:
+            raise InvalidModelInitialization(
+                f"Couldn't add relationship from the class {str(self)}. "
+                f"Source or created relationship must be specified"
+            )
+
+        if isinstance(relation_type, str):
+            relation_type = RelationshipType(relation_type)
+
+        relationship = ClassRelationship(
+            source=self, source=source_element, type=relation_type, **rel_init_kwargs
+        )
+        relationship = self._add_to_relations_from(relationship)
+        return relationship
+
+    def _add_to_relations_from(
+        self, relationship: ClassRelationship
+    ) -> ClassRelationship:
+        """
+        Adds relation to self.relations_from list.
+        Logic unifying assignment of the element on relationship side is applied.
+
+        :arg relationship - predefined ClassRelationship instance. During assignment its source side is set to
+        the current element, but target side is left as given.
+        """
         self.relations_from.append(relationship)
-        relationship.target = self
+        relationship.source = self
+        return relationship
+
+    def set_as_target_of(self, relationship: ClassRelationship) -> ClassRelationship:
+        """
+        Set current ClassDiagramElement as a target side of the given relationship.
+        Logic unifying assignment of the element on relationship side is applied.
+        """
+        relationship = self._add_to_relations_from(relationship)
+        return relationship
 
 
 class ClassDiagramClass(ClassDiagramElement):
@@ -59,14 +160,14 @@ class ClassDiagramInterface(ClassDiagramElement):
 
 
 class ClassRelationship(UMLObject):
-    @dataclass
+    @dataclass()
     class RelationshipSide:
         element: Optional[ClassDiagramElement] = None
         role: Optional[str] = None
         """
         Name of the property storing relationship on one side.
         """
-        min_max_multiplicity: tuple[str, str] = ("0", "inf")
+        min_max_multiplicity: tuple[str, str] = ("0", "1")
         # TODO: change type to dataclass with values from enum with possible values
         # TODO: (would be created from config with mapping of name to python type (change name to multiplicity_range)
         # TODO: discuss default value
@@ -77,8 +178,8 @@ class ClassRelationship(UMLObject):
         name: Optional[str] = None,
         source: Optional[ClassDiagramElement] = None,
         target: Optional[ClassDiagramElement] = None,
-        source_minmax: tuple[str, str] = ("0", "inf"),
-        target_minmax: tuple[str, str] = ("0", "inf"),
+        source_minmax: tuple[str, str] = ("0", "1"),
+        target_minmax: tuple[str, str] = ("0", "1"),
         source_role: Optional[str] = None,
         target_role: Optional[str] = None,
         *,
@@ -88,13 +189,16 @@ class ClassRelationship(UMLObject):
     ) -> None:
         """
         Class representing UML Class Diagram Relationship between elements.
-        If source_side or target_side are specified, they are treated with
-        a higher priority than positional arguments.
+
+        :arg source_side - instance of ClassRelationship.RelationshipSide class.
+            If specified, it has priority over other source-initializing arguments.
+            Logic unifying assignment of the relationship on the source element side is applied -
+            i.e. if given source_side's element doesn't have current relationship in its relations_to, it will be added.
         """
-        self._source_side = source_side or ClassRelationship.RelationshipSide(
+        self.source_side = source_side or ClassRelationship.RelationshipSide(
             source, source_role, source_minmax
         )
-        self._target_side = target_side or ClassRelationship.RelationshipSide(
+        self.target_side = target_side or ClassRelationship.RelationshipSide(
             target, target_role, target_minmax
         )
 
@@ -117,7 +221,7 @@ class ClassRelationship(UMLObject):
             """
             In case given side is a placeholder - not yet initialized.
             """
-            side.element.add_relationship_to(self)
+            side.element.add_relationship_to(relationship=self)
 
     @source.setter
     def source(self, new_source_element: ClassDiagramElement) -> None:
@@ -129,7 +233,7 @@ class ClassRelationship(UMLObject):
 
         if isinstance(new_source_element, ClassDiagramElement):
             self._source_side.element = new_source_element
-            new_source_element.add_relationship_to(self)
+            new_source_element.add_relationship_to(relationship=self)
 
         else:
             raise InvalidModelInitialization(
@@ -162,7 +266,7 @@ class ClassRelationship(UMLObject):
             """
             In case given side is a placeholder - not yet initialized.
             """
-            side.element.add_relationship_from(self)
+            side.element.add_relationship_from(relationship=self)
 
     @target.setter
     def target(self, new_target_element: ClassDiagramElement) -> None:
@@ -174,7 +278,7 @@ class ClassRelationship(UMLObject):
 
         if isinstance(new_target_element, ClassDiagramElement):
             self._target_side.element = new_target_element
-            new_target_element.add_relationship_from(self)
+            new_target_element.add_relationship_from(relationship=self)
 
         else:
             raise InvalidModelInitialization(
@@ -191,6 +295,15 @@ class ClassRelationship(UMLObject):
             target_element, role, min_max_multiplicity
         )
         self.target_side = new_target_side
+
+    def __key(self) -> tuple:
+        """
+        Function returning tuple of attributes used for unique identification of a relationship.
+        """
+        return (self.name, self._source_side, self._target_side, self.type)
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, ClassRelationship) and self.__key() == other.__key()
 
     def accept(self, visitor: v.ModelVisitor):
         visitor.visit_class_relationship(self)
