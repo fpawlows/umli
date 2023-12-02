@@ -1,11 +1,11 @@
 from typing import Optional
 
-import uml_interpreter.model.abstract as bc
-import uml_interpreter.model.class_diagram as cd
+import uml_interpreter.model.diagrams.abstract as dg
+import uml_interpreter.model.diagrams.class_diagram as cd
 from uml_interpreter.model.abstract import UMLObject
 
 
-class ComponentDiagram(bc.StructuralDiagram):
+class ComponentDiagram(dg.StructuralDiagram):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.components: list[Component] = []
@@ -20,7 +20,8 @@ class ComponentRelationMember(UMLObject):
 
 class ComponentRelationship(UMLObject):
     def __init__(
-        self, source: ComponentRelationMember, target: ComponentRelationMember, **kwargs
+        self, source: ComponentRelationMember, target: ComponentRelationMember,
+        **kwargs
     ) -> None:
         self.source = source
         source.relations_from.append(self)
