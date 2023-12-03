@@ -1,37 +1,34 @@
 from dataclasses import dataclass
-from typing import Any, NamedTuple
-
-from uml_interpreter.model.class_diagram import ClassDiagramElement, ClassRelationship
-
-
-class ElemWithId(NamedTuple):
-    elem: ClassDiagramElement | ClassRelationship | Any
-    id: str
+from typing import Any
+from uml_interpreter.model.diagrams.class_diagram import (
+    ClassDiagramElement,
+    ClassRelationship,
+)
+from abc import ABC, abstractmethod
 
 
-@dataclass
-class RelIds:
-    src_id: str
-    dst_id: str
+class RelationshipEditor(ABC):
+    def __init__(self, relationship: ClassRelationship) -> None:
+        self._relationship = relationship
+
+    @abstractmethod
+    def __call__(self, *args: Any, **kwds: Any) -> ClassRelationship:
+        pass
 
 
-class RelWithIds(NamedTuple):
-    rel: ClassRelationship
-    ids: RelIds
+class SetRelationshipTarget(RelationshipEditor):
+    def __call__(self, target: ClassDiagramElement) -> ClassRelationship:
+        self._relationship.target = target
+        return self._relationship
 
 
-@dataclass
-class RelEndRoles:
-    src_role: str
-    dst_role: str
-
-
-class EndMinMax(NamedTuple):
-    min: str
-    max: str
+class SetRelationshipSource(RelationshipEditor):
+    def __call__(self, source: ClassDiagramElement) -> ClassRelationship:
+        self._relationship.source = source
+        return self._relationship
 
 
 @dataclass
-class RelEndsMinMax:
-    src_minmax: EndMinMax
-    dst_minmax: EndMinMax
+class SourceDestinationPair:
+    source: Any = None
+    target: Any = None

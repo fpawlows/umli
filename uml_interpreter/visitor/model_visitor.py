@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from uml_interpreter.model.base_classes import UMLDiagram, UMLModel
-    from uml_interpreter.model.class_diagram import (
+    from uml_interpreter.model.model import UMLDiagram, UMLModel
+    from uml_interpreter.model.diagrams.class_diagram import (
         ClassDiagram,
         ClassDiagramAttribute,
         ClassDiagramClass,
@@ -88,49 +88,49 @@ class ModelPrinter(ModelVisitor):
         self.decr_ident()
 
     def visit_class_diagram_element(self, elem: ClassDiagramElement):
-        self.print(f'Element: "{elem.name}"')
+        self.print(f'Element: "{elem.name}" id: {elem.id}')
 
         self.incr_ident()
         self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
     def visit_class_diagram_class(self, elem: ClassDiagramClass):
-        self.print(f'Class: "{elem.name}"')
+        self.print(f'Class: "{elem.name}" id: {elem.id}')
 
         self.incr_ident()
         self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
     def visit_class_diagram_interface(self, elem: ClassDiagramInterface):
-        self.print(f'Interface: "{elem.name}"')
+        self.print(f'Interface: "{elem.name}" id: {elem.id}')
 
         self.incr_ident()
         self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
     def _visit_class_diagram_element_data(self, elem: ClassDiagramElement):
-        if len(elem.relations_from) > 0:
-            self.print("Relationships (source):")
+        if elem.relations_from:
+            self.print("Relationships (target):")
             self.incr_ident()
             for rel in elem.relations_from:
                 rel.accept(self)
             self.decr_ident()
 
-        if len(elem.relations_to) > 0:
-            self.print("Relationships (target):")
+        if elem.relations_to:
+            self.print("Relationships (source):")
             self.incr_ident()
             for rel in elem.relations_to:
                 rel.accept(self)
             self.decr_ident()
 
-        if len(elem.attributes) > 0:
+        if elem.attributes:
             self.print("Attributes:")
             self.incr_ident()
             for attr in elem.attributes:
                 attr.accept(self)
             self.decr_ident()
 
-        if len(elem.methods) > 0:
+        if elem.methods:
             self.print("Methods:")
             self.incr_ident()
             for meth in elem.methods:
@@ -138,14 +138,15 @@ class ModelPrinter(ModelVisitor):
             self.decr_ident()
 
     def visit_class_relationship(self, rel: ClassRelationship):
-        from uml_interpreter.model.class_diagram import ClassDiagramElement
+        from uml_interpreter.model.diagrams.class_diagram import ClassDiagramElement
 
         if isinstance(rel.source, ClassDiagramElement) and isinstance(
             rel.target, ClassDiagramElement
         ):
             self.print(
-                f"{rel.type} ({rel.name}) - {rel.source.name} ({rel.source_role}) [{rel.source_minmax[0]}...{rel.source_minmax[1]}] -> \
-                    [{rel.target_minmax[0]}...{rel.target_minmax[1]}] ({rel.target_role}) {rel.target.name}"
+                f"{rel.type} ({rel.name}) - {rel.source.name} ({rel.source_side.role})[{rel.source_side.min_max_multiplicity[0]}..."
+                + f"{rel.source_side.min_max_multiplicity[1]}] -> [{rel.target_side.min_max_multiplicity[0]}..."
+                + f"{rel.target_side.min_max_multiplicity[1]}] ({rel.target_side.role}) {rel.target.name}"
             )
 
     def visit_class_diagram_attribute(self, attr: ClassDiagramAttribute):

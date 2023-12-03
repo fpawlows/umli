@@ -1,17 +1,5 @@
 import xml.etree.ElementTree as ET
-from abc import ABC, abstractmethod
-
-
-class Source(ABC):
-    @abstractmethod
-    def read_tree(self):
-        pass
-
-
-class XMLSource(Source):
-    @abstractmethod
-    def read_tree(self) -> ET.ElementTree:
-        pass
+from uml_interpreter.source.abstract import XMLSource
 
 
 class FileSource(XMLSource):
