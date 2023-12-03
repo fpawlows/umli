@@ -1,13 +1,14 @@
 from abc import ABC
+from typing import Optional
 
 
 class UMLObject(ABC):
-    def __init__(self, object_id: str = None) -> None:
-        self._id = object_id or id(self)
+    def __init__(self, object_id: Optional[str] = None) -> None:
+        self._id = object_id
         super().__init__()
 
     @property
-    def id(self) -> str:
+    def id(self) -> Optional[str]:
         return self._id
 
     @id.setter

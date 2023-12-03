@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Optional
+from uml_interpreter.model.abstract import UMLObject
 
 import uml_interpreter.model.diagrams.abstract as dg
 import uml_interpreter.model.diagrams.class_diagram as cd
@@ -11,8 +12,9 @@ class SequenceDiagram(dg.BehavioralDiagram):
         self.actors: list[SequenceActor] = []
 
 
-class SequenceActor:
+class SequenceActor(UMLObject):
     def __init__(self, name: str) -> None:
+        super().__init__()
         self.messages_from: list[SequenceMessage] = []
         self.messages_to: list[SequenceMessage] = []
         self.events: list[LifespanEvent] = []

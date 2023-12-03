@@ -1,12 +1,12 @@
-from model.base_classes import UMLModel
+from model.model import UMLModel
 
 
 class Serializer:
     def __init__(self) -> None:
         pass
 
-    def save_to_file(path: str) -> UMLModel:
-        pass
+    def save_to_file(self, path: str) -> UMLModel:
+        raise Exception
 
 
 class XMLSerializer(Serializer):

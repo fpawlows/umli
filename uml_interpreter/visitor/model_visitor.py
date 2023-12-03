@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from uml_interpreter.model.abstract import UMLDiagram, UMLModel
-    from uml_interpreter.model.class_diagram import (
+    from uml_interpreter.model.model import UMLDiagram, UMLModel
+    from uml_interpreter.model.diagrams.class_diagram import (
         ClassDiagram,
         ClassDiagramAttribute,
         ClassDiagramClass,
@@ -88,21 +88,21 @@ class ModelPrinter(ModelVisitor):
         self.decr_ident()
 
     def visit_class_diagram_element(self, elem: ClassDiagramElement):
-        self.print(f'Element: "{elem.name}"')
+        self.print(f'Element: "{elem.name}" id: {elem.id}')
 
         self.incr_ident()
         self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
     def visit_class_diagram_class(self, elem: ClassDiagramClass):
-        self.print(f'Class: "{elem.name}"')
+        self.print(f'Class: "{elem.name}" id: {elem.id}')
 
         self.incr_ident()
         self._visit_class_diagram_element_data(elem)
         self.decr_ident()
 
     def visit_class_diagram_interface(self, elem: ClassDiagramInterface):
-        self.print(f'Interface: "{elem.name}"')
+        self.print(f'Interface: "{elem.name}" id: {elem.id}')
 
         self.incr_ident()
         self._visit_class_diagram_element_data(elem)
@@ -144,8 +144,9 @@ class ModelPrinter(ModelVisitor):
             rel.target, ClassDiagramElement
         ):
             self.print(
-                f"{rel.type} ({rel.name}) - {rel.source.name} ({rel.source_side.role}) [{rel.source_side.min_max_multiplicity[0]}...{rel.source_side.min_max_multiplicity[1]}] -> \
-                    [{rel.target_side.min_max_multiplicity[0]}...{rel.target_side.min_max_multiplicity[1]}] ({rel.target_side.role}) {rel.target.name}"
+                f"{rel.type} ({rel.name}) - {rel.source.name} ({rel.source_side.role})[{rel.source_side.min_max_multiplicity[0]}..."
+                + f"{rel.source_side.min_max_multiplicity[1]}] -> [{rel.target_side.min_max_multiplicity[0]}..."
+                + f"{rel.target_side.min_max_multiplicity[1]}] ({rel.target_side.role}) {rel.target.name}"
             )
 
     def visit_class_diagram_attribute(self, attr: ClassDiagramAttribute):

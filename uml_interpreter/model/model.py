@@ -7,6 +7,7 @@ from uml_interpreter.model.abstract import UMLObject
 
 class UMLModel(UMLObject):
     def __init__(self, diagrams=None, filename=None) -> None:
+        super().__init__()
         self.diagrams: list[UMLDiagram] = diagrams or []
         self.filename: Optional[str] = filename
 

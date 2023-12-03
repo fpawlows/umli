@@ -209,8 +209,8 @@ class ClassRelationship(UMLObject):
         source_role: Optional[str] = None,
         target_role: Optional[str] = None,
         *,
-        source_side: RelationshipSide = None,
-        target_side: RelationshipSide = None,
+        source_side: Optional[RelationshipSide] = None,
+        target_side: Optional[RelationshipSide] = None,
         **kwargs,
     ) -> None:
         """
@@ -239,7 +239,7 @@ class ClassRelationship(UMLObject):
         return self._source_side
 
     @property
-    def source(self) -> ClassDiagramElement:
+    def source(self) -> Optional[ClassDiagramElement]:
         return self._source_side.element
 
     @source_side.setter
@@ -276,7 +276,7 @@ class ClassRelationship(UMLObject):
         min_max_multiplicity: Optional[tuple[str, str]],
     ) -> None:
         new_source_side = ClassRelationship.RelationshipSide(
-            source_element, role, min_max_multiplicity
+            source_element, role, min_max_multiplicity or ("0", "1")
         )
         self.source_side = new_source_side
 
@@ -285,7 +285,7 @@ class ClassRelationship(UMLObject):
         return self._target_side
 
     @property
-    def target(self) -> ClassDiagramElement:
+    def target(self) -> Optional[ClassDiagramElement]:
         return self._target_side.element
 
     @target_side.setter
@@ -322,7 +322,7 @@ class ClassRelationship(UMLObject):
         min_max_multiplicity: Optional[tuple[str, str]],
     ) -> None:
         new_target_side = ClassRelationship.RelationshipSide(
-            target_element, role, min_max_multiplicity
+            target_element, role, min_max_multiplicity or ("0", "1")
         )
         self.target_side = new_target_side
 

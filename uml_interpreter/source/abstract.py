@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from xml import etree as ET
+import xml.etree.ElementTree as ET
 
 
 class Source(ABC):
