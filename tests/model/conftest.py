@@ -1,6 +1,6 @@
 import pytest
 
-from uml_interpreter.model.abstract import UMLModel
+from uml_interpreter.model.model import UMLModel
 
 
 @pytest.fixture
