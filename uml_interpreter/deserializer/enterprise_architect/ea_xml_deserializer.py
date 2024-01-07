@@ -9,7 +9,7 @@ from uml_interpreter.deserializer.enterprise_architect.constants import (
     CLASS_IFACE_MAPPING,
     CLASS_REL_MAPPING_TYPE,
     CLASS_RELATIONSHIPS_TYPES,
-    EA_ATTR,
+    EA_ATTRIBUTES,
     EA_ATTR_MAPPING,
     EA_TAGS,
 )
@@ -144,7 +144,7 @@ class EAXMLDeserializer(XMLDeserializer):
         if not self._is_supported_element(elem):
             return None
 
-        if elem_id := elem.attrib.get(EA_ATTR["elem_id"]):
+        if elem_id := elem.attrib.get(EA_ATTRIBUTES["elem_id"]):
             if parsed_elem := self._try_build_class_or_iface(elem):
                 parsed_elem.id = elem_id
                 self._id_to_instance_mapping[elem_id] = parsed_elem
@@ -203,14 +203,14 @@ class EAXMLDeserializer(XMLDeserializer):
 
     def _get_filled_diag(self, diag: ET.Element, elems: list[UMLObject]) -> UMLDiagram:
         diag_name = self._get_mandatory_node(diag, "diag_propty").attrib.get(
-            EA_ATTR["diag_propty_name"]
+            EA_ATTRIBUTES["diag_propty_name"]
         )
 
         if not (diag_elems := diag.find(EA_TAGS["diag_elems"])):
             return UMLDiagram(diag_name)
 
         elem_ids: list[str] = [
-            diag_elem.attrib[EA_ATTR["diag_elem_id"]]
+            diag_elem.attrib[EA_ATTRIBUTES["diag_elem_id"]]
             for diag_elem in diag_elems.iter(EA_TAGS["diag_elem"])
         ]
 
@@ -223,15 +223,15 @@ class EAXMLDeserializer(XMLDeserializer):
 
     def _is_supported_element(self, elem: ET.Element) -> bool:
         is_supported_element = (
-            elem.attrib[EA_ATTR["elem_type"]] not in self.IGNORED_XML_ELEMENTS
+            elem.attrib[EA_ATTRIBUTES["elem_type"]] not in self.IGNORED_XML_ELEMENTS
         )
         return is_supported_element
 
     def _try_build_class_or_iface(
         self, elem: ET.Element
     ) -> Optional[ClassDiagramElement]:
-        if ElemClass := CLASS_IFACE_MAPPING.get(elem.attrib[EA_ATTR["elem_type"]]):
-            curr_elem = ElemClass(elem.attrib[EA_ATTR["elem_name"]])
+        if ElemClass := CLASS_IFACE_MAPPING.get(elem.attrib[EA_ATTRIBUTES["elem_type"]]):
+            curr_elem = ElemClass(elem.attrib[EA_ATTRIBUTES["elem_name"]])
 
             attrs: list[ClassDiagramAttribute] = self._build_attributes(elem)
             meths: list[ClassDiagramMethod] = self._build_methods(elem)
@@ -245,11 +245,11 @@ class EAXMLDeserializer(XMLDeserializer):
     def _build_attributes(self, elem: ET.Element) -> list[ClassDiagramAttribute]:
         attrs: list[ClassDiagramAttribute] = []
         for attr in elem.iter(EA_TAGS["elem_attr"]):
-            name: str = attr.attrib[EA_ATTR["elem_attr_name"]]
+            name: str = attr.attrib[EA_ATTRIBUTES["elem_attr_name"]]
             if not (
                 type_name := EA_ATTR_MAPPING.get(
                     self._get_mandatory_node(attr, "elem_attr_type").attrib[
-                        EA_ATTR["elem_attr_type"]
+                        EA_ATTRIBUTES["elem_attr_type"]
                     ]
                 )
             ):
@@ -260,18 +260,18 @@ class EAXMLDeserializer(XMLDeserializer):
     def _build_methods(self, elem: ET.Element) -> list[ClassDiagramMethod]:
         meths: list[ClassDiagramMethod] = []
         for meth in elem.iter(EA_TAGS["elem_meth"]):
-            if (name := meth.attrib.get(EA_ATTR["elem_meth_name"])) is None:
+            if (name := meth.attrib.get(EA_ATTRIBUTES["elem_meth_name"])) is None:
                 name = ""
 
             ret_type: Optional[str] = ""
             params: list[ClassDiagramMethodParameter] = []
             for param in meth.iter(EA_TAGS["elem_meth_param"]):
                 if (
-                    param_name := param.attrib.get(EA_ATTR["elem_meth_param_name"])
+                    param_name := param.attrib.get(EA_ATTRIBUTES["elem_meth_param_name"])
                 ) == "return":
                     if not (
                         ret_type := EA_ATTR_MAPPING.get(
-                            param.attrib[EA_ATTR["elem_meth_ret_type"]]
+                            param.attrib[EA_ATTRIBUTES["elem_meth_ret_type"]]
                         )
                     ):
                         ret_type = ""
@@ -281,7 +281,7 @@ class EAXMLDeserializer(XMLDeserializer):
                         type_name := EA_ATTR_MAPPING.get(
                             self._get_mandatory_node(
                                 param, "elem_meth_param_type"
-                            ).attrib[EA_ATTR["elem_meth_param_type"]]
+                            ).attrib[EA_ATTRIBUTES["elem_meth_param_type"]]
                         )
                     ):
                         type_name = ""
@@ -299,23 +299,23 @@ class EAXMLDeserializer(XMLDeserializer):
         low = "inf"
         high = "inf"
         for src_vals in end.findall(EA_TAGS["end_low"]):
-            src_low = src_vals.attrib[EA_ATTR["end_low_type"]]
+            src_low = src_vals.attrib[EA_ATTRIBUTES["end_low_type"]]
             # TODO: use configuration / constants file with types mappings
             if src_low == "uml:LiteralUnlimitedNatural":
                 low = "inf"
             else:
-                low = src_vals.attrib[EA_ATTR["end_low_val"]]
+                low = src_vals.attrib[EA_ATTRIBUTES["end_low_val"]]
 
         for src_vals in end.findall(EA_TAGS["end_high"]):
-            src_high = src_vals.attrib[EA_ATTR["end_high_type"]]
+            src_high = src_vals.attrib[EA_ATTRIBUTES["end_high_type"]]
             if src_high == "uml:LiteralUnlimitedNatural":
                 high = "inf"
             else:
-                high = src_vals.attrib[EA_ATTR["end_high_val"]]
+                high = src_vals.attrib[EA_ATTRIBUTES["end_high_val"]]
 
         source_side.min_max_multiplicity = (low, high)
 
-        if role := end.attrib.get(EA_ATTR["end_name_src"]):
+        if role := end.attrib.get(EA_ATTRIBUTES["end_name_src"]):
             source_side.role = role
 
         return source_side
@@ -328,47 +328,47 @@ class EAXMLDeserializer(XMLDeserializer):
         low = "inf"
         high = "inf"
         for src_vals in end.findall(EA_TAGS["end_low"]):
-            dst_low = src_vals.attrib[EA_ATTR["end_low_type"]]
+            dst_low = src_vals.attrib[EA_ATTRIBUTES["end_low_type"]]
             if dst_low == "uml:LiteralUnlimitedNatural":
                 low = "inf"
             else:
-                low = src_vals.attrib[EA_ATTR["end_low_val"]]
+                low = src_vals.attrib[EA_ATTRIBUTES["end_low_val"]]
 
         for src_vals in end.findall(EA_TAGS["end_high"]):
-            dst_high = src_vals.attrib[EA_ATTR["end_high_type"]]
+            dst_high = src_vals.attrib[EA_ATTRIBUTES["end_high_type"]]
             if dst_high == "uml:LiteralUnlimitedNatural":
                 high = "inf"
             else:
-                high = src_vals.attrib[EA_ATTR["end_high_val"]]
+                high = src_vals.attrib[EA_ATTRIBUTES["end_high_val"]]
 
         target_side.min_max_multiplicity = (low, high)
 
-        if role := end.attrib.get(EA_ATTR["end_name_dst"]):
+        if role := end.attrib.get(EA_ATTRIBUTES["end_name_dst"]):
             target_side.role = role
 
         return target_side
 
     def _try_build_relationship(self, elem: ET.Element) -> Optional[ClassRelationship]:
-        if elem.attrib[EA_ATTR["elem_type"]] in CLASS_RELATIONSHIPS_TYPES:
-            rel_name = elem.attrib.get(EA_ATTR["end_name"])
-            type_name = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTR["elem_type"]]]
+        if elem.attrib[EA_ATTRIBUTES["elem_type"]] in CLASS_RELATIONSHIPS_TYPES:
+            rel_name = elem.attrib.get(EA_ATTRIBUTES["end_name"])
+            type_name = CLASS_REL_MAPPING_TYPE[elem.attrib[EA_ATTRIBUTES["elem_type"]]]
 
             # Final relationship uninitialized placeholder
             processed_relation = ClassRelationship(type_name, rel_name)
             ends_ids = SourceDestinationPair()
 
             for end in elem.iter(EA_TAGS["end"]):
-                if end.attrib[EA_ATTR["end_id"]].startswith("EAID_src"):
+                if end.attrib[EA_ATTRIBUTES["end_id"]].startswith("EAID_src"):
                     ends_ids.source = self._get_mandatory_node(end, "end_type").attrib[
-                        EA_ATTR["end_type_src"]
+                        EA_ATTRIBUTES["end_type_src"]
                     ]
                     processed_relation.source_side = self._create_relation_source_side(
                         end
                     )
 
-                elif end.attrib[EA_ATTR["end_id"]].startswith("EAID_dst"):
+                elif end.attrib[EA_ATTRIBUTES["end_id"]].startswith("EAID_dst"):
                     ends_ids.target = self._get_mandatory_node(end, "end_type").attrib[
-                        EA_ATTR["end_type_dst"]
+                        EA_ATTRIBUTES["end_type_dst"]
                     ]
                     processed_relation.target_side = self._create_relation_target_side(
                         end

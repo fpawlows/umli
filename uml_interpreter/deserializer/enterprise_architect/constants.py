@@ -1,10 +1,11 @@
 """
-XML Deserializer constants (e.g. tags' and atrributes' names)
+XML Deserializer constants (e.g. tags' and atrributes' names) used to
+    represent UML Model in EA (Enterprise Architect).
 
 The module includes the following:
-- DESERIALIZER_CONSTANTS
+- XML_NAMESPACES
 - EA_TAGS
-- EA_ATTR
+- EA_ATTRIBUTES
 - EA_TAGS_EXT
 - EA_ATTR_EXT
 - CLASS_DIAGRAM_TYPES
@@ -22,18 +23,16 @@ from uml_interpreter.model.diagrams.class_diagram import (
 )
 
 
-DESERIALIZER_CONSTANTS: dict[str, str] = {
+XML_NAMESPACES: dict[str, str] = {
     "UML2_1": "{http://schema.omg.org/spec/UML/2.1}",
     "XMI2_1": "{http://schema.omg.org/spec/XMI/2.1}",
 }
-"""
-XML namespaces
-"""
+
 
 EA_TAGS: dict[str, str] = {
-    "root": f"{DESERIALIZER_CONSTANTS['UML2_1']}XMI",
+    "root": f"{XML_NAMESPACES['UML2_1']}XMI",
     # Model
-    "model": f"{DESERIALIZER_CONSTANTS['UML2_1']}Model",
+    "model": f"{XML_NAMESPACES['UML2_1']}Model",
     "elem": "packagedElement",
     "end": "ownedEnd",
     "end_type": "type",
@@ -45,7 +44,7 @@ EA_TAGS: dict[str, str] = {
     "elem_meth_param": "ownedParameter",
     "elem_meth_param_type": "type",
     # Diagrams
-    "ext": f"{DESERIALIZER_CONSTANTS['XMI2_1']}Extension",
+    "ext": f"{XML_NAMESPACES['XMI2_1']}Extension",
     "diags": "diagrams",
     "diag": "diagram",
     "diag_propty": "properties",
@@ -56,22 +55,22 @@ EA_TAGS: dict[str, str] = {
 Enterprise Architect XML tags
 """
 
-EA_ATTR: dict[str, str] = {
+EA_ATTRIBUTES: dict[str, str] = {
     # Model
-    "elem_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}id",
-    "elem_type": f"{DESERIALIZER_CONSTANTS['XMI2_1']}type",
+    "elem_id": f"{XML_NAMESPACES['XMI2_1']}id",
+    "elem_type": f"{XML_NAMESPACES['XMI2_1']}type",
     "elem_name": "name",
-    "end_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}id",
-    "end_type": f"{DESERIALIZER_CONSTANTS['XMI2_1']}type",
+    "end_id": f"{XML_NAMESPACES['XMI2_1']}id",
+    "end_type": f"{XML_NAMESPACES['XMI2_1']}type",
     "end_name": "name",
-    "end_type_src": f"{DESERIALIZER_CONSTANTS['XMI2_1']}idref",
-    "end_type_dst": f"{DESERIALIZER_CONSTANTS['XMI2_1']}idref",
+    "end_type_src": f"{XML_NAMESPACES['XMI2_1']}idref",
+    "end_type_dst": f"{XML_NAMESPACES['XMI2_1']}idref",
     "end_name_src": "name",
     "end_name_dst": "name",
     "end_low_val": "value",
     "end_high_val": "value",
-    "end_low_type": f"{DESERIALIZER_CONSTANTS['XMI2_1']}type",
-    "end_high_type": f"{DESERIALIZER_CONSTANTS['XMI2_1']}type",
+    "end_low_type": f"{XML_NAMESPACES['XMI2_1']}type",
+    "end_high_type": f"{XML_NAMESPACES['XMI2_1']}type",
     "elem_attr_name": "name",
     "elem_attr_type": "href",
     "elem_meth_name": "name",
@@ -79,7 +78,7 @@ EA_ATTR: dict[str, str] = {
     "elem_meth_param_name": "name",
     "elem_meth_ret_type": "type",
     # Diagrams
-    "diag_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}id",
+    "diag_id": f"{XML_NAMESPACES['XMI2_1']}id",
     "diag_propty_name": "name",
     "diag_elem_id": "subject",
 }
@@ -93,8 +92,8 @@ EA_ATTR_MAPPING = {
 }
 
 EA_TAGS_EXT: dict[str, str] = {
-    "root": f"{DESERIALIZER_CONSTANTS['UML2_1']}XMI",
-    "ext": f"{DESERIALIZER_CONSTANTS['XMI2_1']}Extension",
+    "root": f"{XML_NAMESPACES['UML2_1']}XMI",
+    "ext": f"{XML_NAMESPACES['XMI2_1']}Extension",
     "elems": "elements",
     "elem": "element",
     "elem_model": "model",
@@ -116,17 +115,17 @@ Enterprise Architect alternative XML tags
 """
 
 EA_ATTR_EXT: dict[str, str] = {
-    "elem_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}idref",
-    "elem_type": f"{DESERIALIZER_CONSTANTS['XMI2_1']}type",
+    "elem_id": f"{XML_NAMESPACES['XMI2_1']}idref",
+    "elem_type": f"{XML_NAMESPACES['XMI2_1']}type",
     "elem_name": "name",
     "elem_model_pkg": "package",
-    "conn_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}idref",
+    "conn_id": f"{XML_NAMESPACES['XMI2_1']}idref",
     "conn_name": "name",
-    "conn_src_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}idref",
-    "conn_trgt_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}idref",
+    "conn_src_id": f"{XML_NAMESPACES['XMI2_1']}idref",
+    "conn_trgt_id": f"{XML_NAMESPACES['XMI2_1']}idref",
     "conn_propty_type": "ea_type",
     "conn_propty_dir": "direction",
-    "diag_id": f"{DESERIALIZER_CONSTANTS['XMI2_1']}id",
+    "diag_id": f"{XML_NAMESPACES['XMI2_1']}id",
     "diag_model_pkg": "package",
     "diag_propty_name": "name",
     "diag_elem_id": "subject",
